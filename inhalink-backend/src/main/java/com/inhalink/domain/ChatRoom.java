@@ -21,10 +21,13 @@ public class ChatRoom extends BaseTimeEntity {
 
     private String creatorStudentId;
 
-    // 연관 모집글 (null 가능 — 즉시매칭으로 생성된 경우)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id")
     private ProjectPost post;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "meal_post_id")
+    private MealPost mealPost;
 
     @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatRoomMember> members = new ArrayList<>();
@@ -40,9 +43,10 @@ public class ChatRoom extends BaseTimeEntity {
         return room;
     }
 
-    public static ChatRoom createDirect(String name, String creatorStudentId) {
+    public static ChatRoom createDirect(String name, MealPost mealPost, String creatorStudentId) {
         ChatRoom room = new ChatRoom();
         room.name = name;
+        room.mealPost = mealPost;
         room.creatorStudentId = creatorStudentId;
         return room;
     }

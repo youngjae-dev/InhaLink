@@ -90,7 +90,7 @@ public class MealPostService {
         memberIds.add(studentId);
         accepted.forEach(a -> memberIds.add(a.getApplicant().getStudentId()));
 
-        chatService.createRoomDirect(post.getTitle() + " 밥친구채팅", memberIds);
+        chatService.createRoomDirect(post.getTitle() + " 밥친구채팅", memberIds, post);
         mealApplicationRepository.deleteAll(all);
         post.close();
     }

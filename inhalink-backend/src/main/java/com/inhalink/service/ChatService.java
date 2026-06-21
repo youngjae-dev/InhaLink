@@ -42,8 +42,15 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatRoomResponse createRoomDirect(String name, List<String> studentIds) {
-        return createRoom(name, studentIds, null);
+    public ChatRoomResponse createRoomDirect(String name, List<String> studentIds, MealPost mealPost) {
+        String creatorId = studentIds.isEmpty() ? null : studentIds.get(0);
+        ChatRoom room = ChatRoom.createDirect(name, mealPost, creatorId);
+        chatRoomRepository.save(room);
+        for (String studentId : studentIds) {
+            User user = userRepository.findById(studentId).orElseThrow(UserNotFoundException::new);
+            chatRoomMemberRepository.save(ChatRoomMember.of(room, user));
+        }
+        return new ChatRoomResponse(chatRoomRepository.findById(room.getId()).orElseThrow());
     }
 
     // 모집글 연관 채팅방 전체 삭제 (모집글 삭제 시 호출)
@@ -61,10 +68,10 @@ public class ChatService {
             throw new org.springframework.security.access.AccessDeniedException("방장만 채팅방을 삭제할 수 있습니다.");
         }
         Long postId = room.getPost() != null ? room.getPost().getId() : null;
+        Long mealPostId = room.getMealPost() != null ? room.getMealPost().getId() : null;
         chatRoomRepository.delete(room);
-        if (postId != null) {
-            projectPostRepository.findById(postId).ifPresent(projectPostRepository::delete);
-        }
+        if (postId != null) projectPostRepository.findById(postId).ifPresent(projectPostRepository::delete);
+        if (mealPostId != null) mealPostRepository.findById(mealPostId).ifPresent(mealPostRepository::delete);
     }
 
     // 내 채팅방 목록 조회
