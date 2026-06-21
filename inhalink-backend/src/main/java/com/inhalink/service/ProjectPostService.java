@@ -108,6 +108,8 @@ public class ProjectPostService {
         List<ProjectApplication> accepted = all.stream()
                 .filter(a -> a.getStatus() == ApplicationStatus.ACCEPTED).collect(Collectors.toList());
 
+        if (accepted.isEmpty()) throw new IllegalStateException("수락된 지원자가 없어 그룹을 확정할 수 없습니다.");
+
         List<String> memberIds = new java.util.ArrayList<>();
         memberIds.add(studentId);
         accepted.forEach(a -> memberIds.add(a.getApplicant().getStudentId()));

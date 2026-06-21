@@ -84,6 +84,8 @@ public class MealPostService {
         List<MealApplication> accepted = all.stream()
                 .filter(a -> a.getStatus() == ApplicationStatus.ACCEPTED).collect(Collectors.toList());
 
+        if (accepted.isEmpty()) throw new IllegalStateException("수락된 지원자가 없어 그룹을 확정할 수 없습니다.");
+
         List<String> memberIds = new ArrayList<>();
         memberIds.add(studentId);
         accepted.forEach(a -> memberIds.add(a.getApplicant().getStudentId()));
