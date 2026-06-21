@@ -34,7 +34,7 @@ function HamburgerMenu() {
   return (
     <>
       <button className="hamburger" onClick={() => setOpen(!open)} style={{ position: "fixed", top: "16px", left: "16px", zIndex: 200 }}>☰</button>
-      <button onClick={() => navigate("/profile/edit")} style={{ position: "fixed", top: "12px", right: "16px", zIndex: 200, background: "#6c63ff", color: "#fff", border: "none", borderRadius: "20px", padding: "6px 14px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>👤 {currentUser?.name || "내 프로필"}</button>
+      <div onClick={() => navigate("/profile/edit")} style={{ position: "fixed", top: "10px", right: "16px", zIndex: 200, width: "40px", height: "40px", borderRadius: "50%", background: "#6c63ff", color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", boxShadow: "0 2px 8px rgba(108,99,255,0.3)" }}>👤</div>
       {open && (
         <>
           <div className="menu-bg" onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 201 }} />
