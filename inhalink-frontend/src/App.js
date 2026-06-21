@@ -32,11 +32,11 @@ function HamburgerMenu() {
 
   return (
     <>
-      <button className="hamburger" onClick={() => setOpen(!open)} style={{ position: "fixed", top: "16px", right: "16px", zIndex: 200 }}>☰</button>
+      <button className="hamburger" onClick={() => setOpen(!open)} style={{ position: "fixed", top: "16px", left: "16px", zIndex: 200 }}>☰</button>
       {open && (
         <>
           <div className="menu-bg" onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 201 }} />
-          <div className="side-menu" style={{ position: "fixed", top: 0, right: 0, zIndex: 202, height: "100vh" }}>
+          <div className="side-menu" style={{ position: "fixed", top: 0, left: 0, zIndex: 202, height: "100vh" }}>
             <h2 className="side-menu-title">InhaLink</h2>
             {[
               ["🏠 홈", "/home"],
