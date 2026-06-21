@@ -1014,7 +1014,7 @@ function ChatRoomPage() {
         <div ref={bottomRef} />
       </div>
       <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
-        <input style={{ flex: 1, minWidth: 0, padding: "10px 14px", borderRadius: "12px", border: "1px solid #ddd", fontSize: "14px" }} placeholder="메시지를 입력하세요" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} />
+        <input style={{ flex: 1, minWidth: 0, padding: "10px 14px", borderRadius: "12px", border: "1px solid #ddd", fontSize: "14px" }} placeholder="메시지를 입력하세요" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); sendMessage(); } }} />
         <button onClick={sendMessage} disabled={!connected} style={{ flexShrink: 0, width: "44px", height: "44px", borderRadius: "50%", background: "#6c63ff", color: "#fff", border: "none", cursor: "pointer", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center" }}>➤</button>
       </div>
     </div>
