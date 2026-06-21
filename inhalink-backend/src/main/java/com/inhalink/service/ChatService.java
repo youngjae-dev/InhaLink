@@ -24,9 +24,10 @@ public class ChatService {
     // 채팅방 생성 (모집글 확정 시 또는 직접 호출)
     @Transactional
     public ChatRoomResponse createRoom(String name, List<String> studentIds, ProjectPost post) {
+        String creatorId = studentIds.isEmpty() ? null : studentIds.get(0);
         ChatRoom room = post != null
-                ? ChatRoom.create(name, post)
-                : ChatRoom.createDirect(name);
+                ? ChatRoom.create(name, post, creatorId)
+                : ChatRoom.createDirect(name, creatorId);
         chatRoomRepository.save(room);
 
         for (String studentId : studentIds) {
@@ -41,6 +42,17 @@ public class ChatService {
     @Transactional
     public ChatRoomResponse createRoomDirect(String name, List<String> studentIds) {
         return createRoom(name, studentIds, null);
+    }
+
+    // 채팅방 삭제 (방장만 가능)
+    @Transactional
+    public void deleteRoom(Long roomId, String studentId) {
+        ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("채팅방이 존재하지 않습니다."));
+        if (!studentId.equals(room.getCreatorStudentId())) {
+            throw new org.springframework.security.access.AccessDeniedException("방장만 채팅방을 삭제할 수 있습니다.");
+        }
+        chatRoomRepository.delete(room);
     }
 
     // 내 채팅방 목록 조회

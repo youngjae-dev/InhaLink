@@ -929,6 +929,7 @@ function MyApplicationsPage() {
 
 // ── 채팅방 목록 ───────────────────────────────────────────
 function ChatListPage() {
+  const { currentUser } = useUser();
   const navigate = useNavigate();
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -936,6 +937,14 @@ function ChatListPage() {
   useEffect(() => {
     api.getMyChatRooms().then(setRooms).catch(() => setRooms([])).finally(() => setLoading(false));
   }, []);
+
+  const handleDelete = (e, roomId) => {
+    e.stopPropagation();
+    if (!window.confirm("채팅방을 삭제하시겠습니까? 모든 대화 내용이 사라집니다.")) return;
+    api.deleteChatRoom(roomId)
+      .then(() => setRooms((prev) => prev.filter((r) => r.id !== roomId)))
+      .catch((err) => alert(err?.message || "삭제에 실패했습니다."));
+  };
 
   return (
     <div className="box wide page-box">
@@ -946,7 +955,13 @@ function ChatListPage() {
       <div className="simple-post-list">
         {rooms.map((room) => (
           <div className="simple-post" key={room.id} onClick={() => navigate(`/chat/${room.id}`)} style={{ cursor: "pointer" }}>
-            <div><h3>{room.name}</h3><p>{room.memberNames.join(", ")}</p></div>
+            <div style={{ flex: 1 }}>
+              <h3>{room.name}</h3>
+              <p style={{ fontSize: "13px", color: "#6b7280" }}>{room.memberNames.join(", ")}</p>
+            </div>
+            {room.creatorStudentId === currentUser?.studentId && (
+              <button onClick={(e) => handleDelete(e, room.id)} style={{ flexShrink: 0, marginLeft: "8px", padding: "5px 12px", background: "#e24b4a", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}>삭제</button>
+            )}
           </div>
         ))}
       </div>

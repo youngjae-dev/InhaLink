@@ -64,6 +64,7 @@ export const api = {
   // 채팅
   getMyChatRooms: () => request("GET", "/chat/rooms"),
   getChatMessages: (roomId) => request("GET", `/chat/rooms/${roomId}/messages`),
+  deleteChatRoom: (roomId) => request("DELETE", `/chat/rooms/${roomId}`),
 
   // 즉시 매칭
   joinMatching: (studentId) => request("POST", `/matching?studentId=${studentId}`),

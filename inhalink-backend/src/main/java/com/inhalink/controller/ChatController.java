@@ -41,6 +41,15 @@ public class ChatController {
         return ResponseEntity.ok(ApiResponse.success("조회 성공", chatService.getMessages(roomId)));
     }
 
+    // ── REST: 채팅방 삭제 (방장만) ────────────────────────
+    @Operation(summary = "채팅방 삭제 (방장만 가능)")
+    @DeleteMapping("/rooms/{roomId}")
+    public ResponseEntity<ApiResponse<Void>> deleteRoom(
+            @PathVariable Long roomId, Authentication auth) {
+        chatService.deleteRoom(roomId, (String) auth.getPrincipal());
+        return ResponseEntity.ok(ApiResponse.success("채팅방이 삭제되었습니다.", null));
+    }
+
     // ── WebSocket: 메시지 송신 ─────────────────────────────
     // 클라이언트: /app/chat/{roomId} 로 전송
     // 구독자:     /topic/chat/{roomId} 로 수신
