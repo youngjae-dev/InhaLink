@@ -754,7 +754,7 @@ function MealDetailPage() {
         </>
       )}
 
-      <button className="back" onClick={() => navigate("/meal")}>뒤로가기</button>
+      <button className="back" onClick={() => navigate(-1)}>뒤로가기</button>
     </div>
   );
 }
