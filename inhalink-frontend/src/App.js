@@ -18,7 +18,8 @@ const UserContext = createContext(null);
 function useUser() { return useContext(UserContext); }
 
 function RequireAuth({ children }) {
-  const { currentUser } = useUser();
+  const { currentUser, authLoading } = useUser();
+  if (authLoading) return null;
   if (!currentUser) return <Navigate to="/" replace />;
   return children;
 }
@@ -126,23 +127,27 @@ function ApplicantList({ applications, setApplications, onAccept, onReject, isMe
 // ── 앱 루트 ──────────────────────────────────────────────
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(!!localStorage.getItem("token"));
   const [posts, setPosts] = useState([]);
   const [selectedPost, setSelectedPost] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token || currentUser) return;
-    api.getMe().then((profile) => {
-      setCurrentUser({ studentId: profile.studentId, name: profile.name, gender: profile.gender || "MALE", contact: formatPhone(profile.contact || "") });
-    }).catch(() => clearToken());
-  }, [currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!token) return;
+    api.getMe()
+      .then((profile) => {
+        setCurrentUser({ studentId: profile.studentId, name: profile.name, gender: profile.gender || "MALE", contact: formatPhone(profile.contact || "") });
+      })
+      .catch(() => clearToken())
+      .finally(() => setAuthLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadPosts = async () => {
     try { const data = await api.getPosts(); setPosts(data || []); } catch { setPosts([]); }
   };
 
   return (
-    <UserContext.Provider value={{ currentUser, setCurrentUser, posts, setPosts, selectedPost, setSelectedPost, loadPosts }}>
+    <UserContext.Provider value={{ currentUser, setCurrentUser, authLoading, posts, setPosts, selectedPost, setSelectedPost, loadPosts }}>
       <BrowserRouter>
         <div className="app">
           <div className="container">
