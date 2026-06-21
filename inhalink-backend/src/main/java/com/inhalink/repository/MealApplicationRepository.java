@@ -19,11 +19,11 @@ public interface MealApplicationRepository extends JpaRepository<MealApplication
     List<MealApplication> findByApplicantStudentIdOrderByCreatedAtDesc(String studentId);
     List<MealApplication> findByMealPostIdAndStatus(Long mealPostId, ApplicationStatus status);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE MealApplication a SET a.status = :status WHERE a.mealPost.id = :postId")
     void updateStatusByPostId(@Param("postId") Long postId, @Param("status") ApplicationStatus status);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM MealApplication a WHERE a.mealPost.id = :postId")
     void deleteByMealPostId(@Param("postId") Long postId);
 }

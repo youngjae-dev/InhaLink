@@ -17,11 +17,11 @@ public interface ProjectApplicationRepository extends JpaRepository<ProjectAppli
     boolean existsByApplicantAndProjectPost(User applicant, ProjectPost projectPost);
     List<ProjectApplication> findByApplicantStudentIdOrderByCreatedAtDesc(String studentId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE ProjectApplication a SET a.status = :status WHERE a.projectPost.id = :postId")
     void updateStatusByPostId(@Param("postId") Long postId, @Param("status") ApplicationStatus status);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM ProjectApplication a WHERE a.projectPost.id = :postId")
     void deleteByProjectPostId(@Param("postId") Long postId);
 }
