@@ -98,9 +98,6 @@ public class ProjectPost extends BaseTimeEntity {
     }
 
     public void close() {
-        if (this.status == PostStatus.CLOSED) {
-            throw new IllegalStateException("이미 마감된 게시글입니다.");
-        }
         this.status = PostStatus.CLOSED;
     }
 
