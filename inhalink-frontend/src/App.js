@@ -4,7 +4,7 @@ import { api, saveToken, clearToken } from "./api";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import {
-  BrowserRouter, Routes, Route, Navigate, useNavigate, useParams,
+  BrowserRouter, Routes, Route, Navigate, useNavigate, useParams, useLocation,
 } from "react-router-dom";
 
 function formatPhone(value) {
@@ -480,6 +480,8 @@ function TeamDetailPage() {
   const { selectedPost, currentUser } = useUser();
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromMyApps = location.state?.fromMyApps === true;
   const [post, setPost] = useState(selectedPost || null);
   const [loading, setLoading] = useState(!selectedPost);
   const [applications, setApplications] = useState([]);
@@ -537,7 +539,7 @@ function TeamDetailPage() {
               .catch(() => alert("마감에 실패했습니다."));
           }} style={{ marginTop: "8px", background: "#e24b4a" }}>조기마감</button>
         )}
-        {!isOwner && (
+        {!isOwner && !fromMyApps && (
           <>
             <button onClick={() => {
               api.applyPost(post.id)
@@ -665,6 +667,8 @@ function MealDetailPage() {
   const { postId } = useParams();
   const { currentUser } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromMyApps = location.state?.fromMyApps === true;
   const [post, setPost] = useState(null);
   const [applications, setApplications] = useState([]);
   const [applyMsg, setApplyMsg] = useState("");
@@ -715,7 +719,7 @@ function MealDetailPage() {
               .catch(() => alert("마감에 실패했습니다."));
           }} style={{ marginTop: "8px", background: "#e24b4a" }}>조기마감</button>
         )}
-        {!isOwner && (
+        {!isOwner && !fromMyApps && (
           <>
             <button onClick={() => {
               api.applyMealPost(post.id)
@@ -861,7 +865,7 @@ function MyApplicationsPage() {
       setTeamApps((prev) => prev.filter((a) => a.applicationId !== app.applicationId));
       return;
     }
-    navigate(`/posts/${app.postId}`);
+    navigate(`/posts/${app.postId}`, { state: { fromMyApps: true } });
   };
 
   const handleMealClick = (app) => {
@@ -870,7 +874,7 @@ function MyApplicationsPage() {
       setMealApps((prev) => prev.filter((a) => a.applicationId !== app.applicationId));
       return;
     }
-    navigate(`/meal/${app.postId}`);
+    navigate(`/meal/${app.postId}`, { state: { fromMyApps: true } });
   };
 
   const AppCard = ({ app, label, onClick }) => {
