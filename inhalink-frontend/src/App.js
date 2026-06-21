@@ -512,7 +512,7 @@ function TeamDetailPage() {
   const [applications, setApplications] = useState([]);
   const [applyMsg, setApplyMsg] = useState("");
   const isOwner = post && currentUser?.studentId === post.writerStudentId;
-  const isClosed = post?.statusDescription === "마감";
+  const isClosed = post?.status === "CLOSED";
 
   useEffect(() => {
     api.getPost(id).then(setPost).catch(() => navigate("/posts")).finally(() => setLoading(false));
@@ -560,7 +560,7 @@ function TeamDetailPage() {
             <button onClick={() => {
               if (!window.confirm("모집을 마감하시겠습니까?")) return;
               api.closePost(post.id, currentUser.studentId)
-                .then(() => { alert("마감되었습니다."); setPost((p) => ({ ...p, statusDescription: "마감" })); })
+                .then(() => { alert("마감되었습니다."); setPost((p) => ({ ...p, status: "CLOSED" })); })
                 .catch(() => alert("마감에 실패했습니다."));
             }} style={{ background: "#f59e0b" }}>조기마감</button>
             <button onClick={() => {
@@ -965,7 +965,7 @@ function MyPostsPage() {
           <h3 style={{ fontSize: "14px", color: "#6b7280", margin: "12px 0 8px" }}>팀플·공모전</h3>
           <div className="simple-post-list" style={{ maxHeight: "240px", overflowY: "auto" }}>
             {teamPosts.map((post) => {
-              const closed = post.statusDescription === "마감";
+              const closed = post.status === "CLOSED";
               return (
                 <div className="simple-post" key={post.id} onClick={() => navigate(`/posts/${post.id}`)} style={{ cursor: "pointer" }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
