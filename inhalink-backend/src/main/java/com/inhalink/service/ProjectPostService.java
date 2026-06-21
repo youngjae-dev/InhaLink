@@ -124,6 +124,7 @@ public class ProjectPostService {
         if (!post.getWriter().getStudentId().equals(studentId)) throw new AccessDeniedException("권한이 없습니다.");
 
         projectApplicationRepository.updateStatusByPostId(postId, ApplicationStatus.CANCELLED);
+        chatService.deleteRoomsByPostId(postId);
         projectPostRepository.delete(post);
     }
 }

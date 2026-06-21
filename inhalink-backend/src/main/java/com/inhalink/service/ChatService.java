@@ -44,6 +44,12 @@ public class ChatService {
         return createRoom(name, studentIds, null);
     }
 
+    // 모집글 연관 채팅방 전체 삭제 (모집글 삭제 시 호출)
+    @Transactional
+    public void deleteRoomsByPostId(Long postId) {
+        chatRoomRepository.deleteAll(chatRoomRepository.findByPostId(postId));
+    }
+
     // 채팅방 삭제 (방장만 가능)
     @Transactional
     public void deleteRoom(Long roomId, String studentId) {
