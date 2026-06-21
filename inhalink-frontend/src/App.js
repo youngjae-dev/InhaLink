@@ -73,7 +73,6 @@ function App() {
               <Route path="/posts" element={<RequireAuth><TeamMainPage /></RequireAuth>} />
               <Route path="/posts/write" element={<RequireAuth><TeamWritePage /></RequireAuth>} />
               <Route path="/posts/:id" element={<RequireAuth><TeamDetailPage /></RequireAuth>} />
-              <Route path="/posts/status" element={<RequireAuth><StatusPage title="공모전 모집 현황" backPath="/posts" /></RequireAuth>} />
               <Route path="/meal" element={<RequireAuth><MealPage /></RequireAuth>} />
               <Route path="/meal/write" element={<RequireAuth><MealWritePage /></RequireAuth>} />
               <Route path="/meal/:postId" element={<RequireAuth><MealDetailPage /></RequireAuth>} />
