@@ -382,7 +382,7 @@ function HomePage() {
           <p>내가 지원한 모집글을 확인해요</p>
         </div>
       </div>
-      <div style={{ display: "flex", justifyContent: "center" }}>
+      <div style={{ display: "flex", justifyContent: "center", marginTop: "30px" }}>
         <div className="service-card" onClick={() => navigate("/chat")}>
           <div className="icon" style={{ background: "#dbeafe", fontSize: "28px" }}>💬</div>
           <h2>채팅</h2>
