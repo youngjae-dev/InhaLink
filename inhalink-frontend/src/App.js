@@ -480,23 +480,21 @@ function TeamWritePage() {
 
 // ── 팀플·공모전 상세 ──────────────────────────────────────
 function TeamDetailPage() {
-  const { selectedPost, currentUser } = useUser();
+  const { currentUser } = useUser();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const fromMyApps = location.state?.fromMyApps === true;
-  const [post, setPost] = useState(selectedPost || null);
-  const [loading, setLoading] = useState(!selectedPost);
+  const [post, setPost] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [applications, setApplications] = useState([]);
   const [applyMsg, setApplyMsg] = useState("");
   const isOwner = post && currentUser?.studentId === post.writerStudentId;
   const isClosed = post?.statusDescription === "마감";
 
   useEffect(() => {
-    if (!selectedPost && id) {
-      api.getPost(id).then(setPost).catch(() => navigate("/posts")).finally(() => setLoading(false));
-    }
-  }, [id, selectedPost, navigate]);
+    api.getPost(id).then(setPost).catch(() => navigate("/posts")).finally(() => setLoading(false));
+  }, [id, navigate]);
 
   useEffect(() => {
     if (isOwner && post) {
@@ -676,13 +674,14 @@ function MealDetailPage() {
   const location = useLocation();
   const fromMyApps = location.state?.fromMyApps === true;
   const [post, setPost] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [applications, setApplications] = useState([]);
   const [applyMsg, setApplyMsg] = useState("");
   const isOwner = post && currentUser?.studentId === post.writerStudentId;
   const isClosed = post?.status === "CLOSED";
 
   useEffect(() => {
-    api.getMealPost(postId).then(setPost).catch(() => navigate("/meal"));
+    api.getMealPost(postId).then(setPost).catch(() => navigate("/meal")).finally(() => setLoading(false));
   }, [postId, navigate]);
 
   useEffect(() => {
@@ -702,7 +701,8 @@ function MealDetailPage() {
       .catch((e) => alert(e?.message || "오류"));
   };
 
-  if (!post) return <div className="box"><p>불러오는 중...</p></div>;
+  if (loading) return <div className="box wide"><p style={{ color: "#6b7280" }}>불러오는 중...</p></div>;
+  if (!post) return null;
 
   return (
     <div className="box wide">
@@ -1097,7 +1097,7 @@ function ChatListPage() {
               <p style={{ fontSize: "13px", color: "#6b7280" }}>{room.memberNames.join(", ")}</p>
             </div>
             {room.creatorStudentId === currentUser?.studentId && (
-              <button onClick={(e) => handleDelete(e, room.id)} style={{ flexShrink: 0, marginLeft: "8px", padding: "5px 12px", background: "#e24b4a", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}>삭제</button>
+              <button onClick={(e) => handleDelete(e, room.id)} style={{ flexShrink: 0, marginLeft: "8px", width: "52px", padding: "6px 0", background: "#e24b4a", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}>삭제</button>
             )}
           </div>
         ))}
