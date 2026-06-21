@@ -1,12 +1,15 @@
 package com.inhalink.service;
 
+import com.inhalink.domain.MealApplication;
 import com.inhalink.domain.MealPost;
 import com.inhalink.domain.User;
+import com.inhalink.domain.enums.ApplicationStatus;
 import com.inhalink.domain.enums.PostStatus;
 import com.inhalink.dto.request.MealPostCreateRequest;
 import com.inhalink.dto.response.MealPostResponse;
 import com.inhalink.exception.PostNotFoundException;
 import com.inhalink.exception.UserNotFoundException;
+import com.inhalink.repository.MealApplicationRepository;
 import com.inhalink.repository.MealPostRepository;
 import com.inhalink.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +17,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,7 +26,9 @@ import java.util.stream.Collectors;
 public class MealPostService {
 
     private final MealPostRepository mealPostRepository;
+    private final MealApplicationRepository mealApplicationRepository;
     private final UserRepository userRepository;
+    private final ChatService chatService;
 
     @Transactional(readOnly = true)
     public List<MealPostResponse> getRecruitingPosts() {
@@ -59,5 +65,29 @@ public class MealPostService {
     public List<MealPostResponse> getMyPosts(String studentId) {
         return mealPostRepository.findByWriterStudentIdOrderByCreatedAtDesc(studentId)
                 .stream().map(MealPostResponse::new).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void confirmPost(String studentId, Long postId) {
+        MealPost post = mealPostRepository.findById(postId).orElseThrow(PostNotFoundException::new);
+        if (!post.getWriter().getStudentId().equals(studentId)) throw new AccessDeniedException("권한이 없습니다.");
+
+        List<MealApplication> accepted = mealApplicationRepository.findByMealPostId(postId).stream()
+                .filter(a -> a.getStatus() == ApplicationStatus.ACCEPTED).collect(Collectors.toList());
+
+        List<String> memberIds = new ArrayList<>();
+        memberIds.add(studentId);
+        accepted.forEach(a -> memberIds.add(a.getApplicant().getStudentId()));
+
+        chatService.createRoomDirect(post.getTitle() + " 밥친구채팅", memberIds);
+    }
+
+    @Transactional
+    public void cancelPost(String studentId, Long postId) {
+        MealPost post = mealPostRepository.findById(postId).orElseThrow(PostNotFoundException::new);
+        if (!post.getWriter().getStudentId().equals(studentId)) throw new AccessDeniedException("권한이 없습니다.");
+
+        mealApplicationRepository.findByMealPostId(postId).forEach(MealApplication::reject);
+        mealPostRepository.delete(post);
     }
 }

@@ -38,6 +38,11 @@ public class ChatService {
         return new ChatRoomResponse(chatRoomRepository.findById(room.getId()).orElseThrow());
     }
 
+    @Transactional
+    public ChatRoomResponse createRoomDirect(String name, List<String> studentIds) {
+        return createRoom(name, studentIds, null);
+    }
+
     // 내 채팅방 목록 조회
     @Transactional(readOnly = true)
     public List<ChatRoomResponse> getMyRooms(String studentId) {

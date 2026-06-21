@@ -17,6 +17,8 @@ public interface ProjectPostRepository extends JpaRepository<ProjectPost, Long> 
 
     List<ProjectPost> findByStatus(PostStatus status);
 
+    List<ProjectPost> findByWriterStudentIdOrderByCreatedAtDesc(String studentId);
+
     @Query("SELECT p FROM ProjectPost p WHERE p.deadline < CURRENT_TIMESTAMP AND p.status = :recruitingStatus")
     List<ProjectPost> findExpiredPosts(@Param("recruitingStatus") PostStatus recruitingStatus);
 }

@@ -1,15 +1,19 @@
 package com.inhalink.service;
 
+import com.inhalink.domain.ProjectApplication;
 import com.inhalink.domain.ProjectPost;
 import com.inhalink.domain.User;
+import com.inhalink.domain.enums.ApplicationStatus;
 import com.inhalink.domain.enums.PostStatus;
 import com.inhalink.dto.request.ProjectPostCreateRequest;
 import com.inhalink.dto.response.ProjectPostResponse;
 import com.inhalink.exception.PostNotFoundException;
 import com.inhalink.exception.UserNotFoundException;
+import com.inhalink.repository.ProjectApplicationRepository;
 import com.inhalink.repository.ProjectPostRepository;
 import com.inhalink.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +26,9 @@ import java.util.stream.Collectors;
 public class ProjectPostService {
 
     private final ProjectPostRepository projectPostRepository;
+    private final ProjectApplicationRepository projectApplicationRepository;
     private final UserRepository userRepository;
+    private final ChatService chatService;
 
     @Transactional
     public Long createPost(String studentId, ProjectPostCreateRequest request) {
@@ -72,8 +78,38 @@ public class ProjectPostService {
         ProjectPost post = projectPostRepository.findById(postId)
                 .orElseThrow(PostNotFoundException::new);
         if (!post.getWriter().getStudentId().equals(studentId)) {
-            throw new org.springframework.security.access.AccessDeniedException("마감 권한이 없습니다.");
+            throw new AccessDeniedException("마감 권한이 없습니다.");
         }
         post.close();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProjectPostResponse> getMyPosts(String studentId) {
+        return projectPostRepository.findByWriterStudentIdOrderByCreatedAtDesc(studentId).stream()
+                .map(ProjectPostResponse::new).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void confirmPost(String studentId, Long postId) {
+        ProjectPost post = projectPostRepository.findById(postId).orElseThrow(PostNotFoundException::new);
+        if (!post.getWriter().getStudentId().equals(studentId)) throw new AccessDeniedException("권한이 없습니다.");
+
+        List<ProjectApplication> accepted = projectApplicationRepository.findByProjectPostId(postId).stream()
+                .filter(a -> a.getStatus() == ApplicationStatus.ACCEPTED).collect(Collectors.toList());
+
+        List<String> memberIds = new java.util.ArrayList<>();
+        memberIds.add(studentId);
+        accepted.forEach(a -> memberIds.add(a.getApplicant().getStudentId()));
+
+        chatService.createRoom(post.getTitle() + " 그룹채팅", memberIds, post);
+    }
+
+    @Transactional
+    public void cancelPost(String studentId, Long postId) {
+        ProjectPost post = projectPostRepository.findById(postId).orElseThrow(PostNotFoundException::new);
+        if (!post.getWriter().getStudentId().equals(studentId)) throw new AccessDeniedException("권한이 없습니다.");
+
+        projectApplicationRepository.findByProjectPostId(postId).forEach(ProjectApplication::reject);
+        projectPostRepository.delete(post);
     }
 }

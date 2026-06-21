@@ -4,12 +4,7 @@ import { api, saveToken, clearToken } from "./api";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-  useNavigate,
-  useParams,
+  BrowserRouter, Routes, Route, Navigate, useNavigate, useParams,
 } from "react-router-dom";
 
 function formatPhone(value) {
@@ -28,30 +23,32 @@ function RequireAuth({ children }) {
   return children;
 }
 
-// ── 햄버거 메뉴 (공통) ───────────────────────────────────
+// ── 공유 햄버거 메뉴 ──────────────────────────────────────
 function HamburgerMenu() {
   const { setCurrentUser } = useUser();
   const navigate = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  const go = (path) => { setMenuOpen(false); navigate(path); };
+  const [open, setOpen] = useState(false);
   const logout = () => { clearToken(); setCurrentUser(null); navigate("/"); };
 
   return (
     <>
-      <button className="hamburger" onClick={() => setMenuOpen((v) => !v)}>☰</button>
-      {menuOpen && (
+      <button className="hamburger" onClick={() => setOpen(!open)} style={{ position: "fixed", top: "16px", right: "16px", zIndex: 200 }}>☰</button>
+      {open && (
         <>
-          <div className="menu-bg" onClick={() => setMenuOpen(false)} />
-          <div className="side-menu">
+          <div className="menu-bg" onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 201 }} />
+          <div className="side-menu" style={{ position: "fixed", top: 0, right: 0, zIndex: 202, height: "100vh" }}>
             <h2 className="side-menu-title">InhaLink</h2>
-            <p onClick={() => go("/home")}>🏠 홈</p>
-            <p onClick={() => go("/meal")}>🍽 밥친구 찾기</p>
-            <p onClick={() => go("/posts")}>🏆 팀플·공모전</p>
-            <p onClick={() => go("/profile/edit")}>👤 프로필 수정</p>
-            <p onClick={() => go("/my-posts")}>📋 내 모집글</p>
-            <p onClick={() => go("/my-applications")}>📝 내 지원 현황</p>
-            <p onClick={logout}>🚪 로그아웃</p>
+            {[
+              ["🏠 홈", "/home"],
+              ["🍚 밥친구 찾기", "/meal"],
+              ["🏆 팀플·공모전", "/posts"],
+              ["👤 프로필 수정", "/profile/edit"],
+              ["📋 내 모집글", "/my-posts"],
+              ["📝 내 지원 현황", "/my-applications"],
+            ].map(([label, path]) => (
+              <p key={path} onClick={() => { setOpen(false); navigate(path); }} style={{ cursor: "pointer", padding: "10px 0", borderBottom: "1px solid #f3f4f6" }}>{label}</p>
+            ))}
+            <p onClick={logout} style={{ cursor: "pointer", padding: "10px 0", color: "#e24b4a" }}>🚪 로그아웃</p>
           </div>
         </>
       )}
@@ -59,11 +56,75 @@ function HamburgerMenu() {
   );
 }
 
+// ── 지원자 상세 모달 ──────────────────────────────────────
+function ApplicantModal({ app, onClose, onAccept, onReject, isMeal }) {
+  if (!app) return null;
+  const isPending = app.status === "PENDING";
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
+      <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", width: "320px", maxWidth: "90vw" }} onClick={(e) => e.stopPropagation()}>
+        <h3 style={{ marginBottom: "16px", fontSize: "16px" }}>지원자 상세정보</h3>
+        <p style={{ fontSize: "14px", marginBottom: "8px" }}><strong>이름:</strong> {app.applicantName}</p>
+        <p style={{ fontSize: "14px", marginBottom: "8px" }}><strong>학과:</strong> {app.applicantDepartment}</p>
+        <p style={{ fontSize: "14px", marginBottom: "8px" }}><strong>연락처:</strong> {app.applicantContact}</p>
+        {!isMeal && app.applicantDomains && <p style={{ fontSize: "14px", marginBottom: "8px", wordBreak: "break-word" }}><strong>관심분야:</strong> {app.applicantDomains}</p>}
+        {!isMeal && app.applicantActivities && <p style={{ fontSize: "14px", marginBottom: "8px", wordBreak: "break-word", overflowWrap: "break-word" }}><strong>활동이력:</strong> {app.applicantActivities}</p>}
+        <div style={{ marginTop: "16px", display: "flex", gap: "8px" }}>
+          {isPending ? (
+            <>
+              <button onClick={() => { onAccept(app.id); onClose(); }} style={{ flex: 1, background: "#10b981", color: "#fff", border: "none", borderRadius: "8px", padding: "10px", cursor: "pointer" }}>수락</button>
+              <button onClick={() => { onReject(app.id); onClose(); }} style={{ flex: 1, background: "#e24b4a", color: "#fff", border: "none", borderRadius: "8px", padding: "10px", cursor: "pointer" }}>거절</button>
+            </>
+          ) : (
+            <p style={{ color: app.status === "ACCEPTED" ? "#10b981" : "#e24b4a", fontWeight: 600 }}>
+              {app.status === "ACCEPTED" ? "수락됨" : "거절됨"}
+            </p>
+          )}
+          <button onClick={onClose} style={{ flex: 1, background: "#f3f4f6", border: "none", borderRadius: "8px", padding: "10px", cursor: "pointer" }}>닫기</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 지원자 목록 섹션 ──────────────────────────────────────
+function ApplicantList({ applications, setApplications, onAccept, onReject, isMeal }) {
+  const [selectedApp, setSelectedApp] = useState(null);
+  return (
+    <div style={{ marginTop: "24px" }}>
+      <h3 style={{ fontSize: "15px", marginBottom: "12px" }}>지원자 목록</h3>
+      {applications.length === 0 && <p style={{ color: "#6b7280", fontSize: "14px" }}>아직 지원자가 없습니다.</p>}
+      <div style={{ maxHeight: "300px", overflowY: "auto" }}>
+        {applications.map((app) => (
+          <div key={app.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #f3f4f6" }}>
+            <span style={{ fontSize: "14px", fontWeight: 600, flex: 1, cursor: "pointer" }} onClick={() => setSelectedApp(app)}>{app.applicantName}</span>
+            {app.status === "PENDING" ? (
+              <div style={{ display: "flex", gap: "6px" }}>
+                <button onClick={() => onAccept(app.id)} style={{ padding: "5px 12px", background: "#10b981", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}>수락</button>
+                <button onClick={() => onReject(app.id)} style={{ padding: "5px 12px", background: "#e24b4a", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}>거절</button>
+              </div>
+            ) : (
+              <span style={{ fontSize: "13px", color: app.status === "ACCEPTED" ? "#10b981" : "#9ca3af" }}>
+                {app.status === "ACCEPTED" ? "수락됨" : "거절됨"}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+      <ApplicantModal
+        app={selectedApp}
+        isMeal={isMeal}
+        onClose={() => setSelectedApp(null)}
+        onAccept={(id) => { onAccept(id); setApplications((prev) => prev.map((a) => a.id === id ? { ...a, status: "ACCEPTED" } : a)); }}
+        onReject={(id) => { onReject(id); setApplications((prev) => prev.map((a) => a.id === id ? { ...a, status: "REJECTED" } : a)); }}
+      />
+    </div>
+  );
+}
+
 // ── 앱 루트 ──────────────────────────────────────────────
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
-  const [verified, setVerified] = useState(false);
-  const [verifiedEmail, setVerifiedEmail] = useState("");
   const [posts, setPosts] = useState([]);
   const [selectedPost, setSelectedPost] = useState(null);
 
@@ -76,16 +137,11 @@ function App() {
   }, [currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadPosts = async () => {
-    try {
-      const data = await api.getPosts();
-      setPosts(data || []);
-    } catch {
-      setPosts([]);
-    }
+    try { const data = await api.getPosts(); setPosts(data || []); } catch { setPosts([]); }
   };
 
   return (
-    <UserContext.Provider value={{ currentUser, setCurrentUser, posts, setPosts, selectedPost, setSelectedPost, loadPosts, verified, setVerified, verifiedEmail, setVerifiedEmail }}>
+    <UserContext.Provider value={{ currentUser, setCurrentUser, posts, setPosts, selectedPost, setSelectedPost, loadPosts }}>
       <BrowserRouter>
         <div className="app">
           <div className="container">
@@ -124,10 +180,7 @@ function StartPage() {
     <div className="box start-box">
       <div className="start-icon">🔗</div>
       <h2>인하링크에 오신 걸 환영합니다</h2>
-      <p className="start-text">
-        밥친구부터 공모전 팀원까지<br />
-        인하대 학생들을 연결해주는 플랫폼
-      </p>
+      <p className="start-text">밥친구부터 공모전 팀원까지<br />인하대 학생들을 연결해주는 플랫폼</p>
       <button onClick={() => navigate("/login")}>로그인</button>
       <button className="outline-btn" onClick={() => navigate("/signup")}>회원가입</button>
     </div>
@@ -152,9 +205,8 @@ function LoginBox() {
       const profile = data.profile;
       setCurrentUser({ studentId: profile.studentId, name: profile.name, gender: profile.gender || "MALE", contact: formatPhone(profile.contact || "") });
       navigate(profile.profileComplete ? "/home" : "/profile/create");
-    } catch {
-      setError("학번 또는 비밀번호가 올바르지 않습니다.");
-    } finally { setLoading(false); }
+    } catch { setError("학번 또는 비밀번호가 올바르지 않습니다."); }
+    finally { setLoading(false); }
   };
 
   return (
@@ -172,46 +224,36 @@ function LoginBox() {
 // ── 회원가입 ──────────────────────────────────────────────
 function SignupBox() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [signupStudentId, setSignupStudentId] = useState("");
-  const [gender, setGender] = useState("");
-  const [contact, setContact] = useState("");
+  const [form, setForm] = useState({ email: "", password: "", name: "", studentId: "", gender: "", contact: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const handleSignup = async () => {
-    if (!email.trim() || !signupStudentId.trim() || !password.trim() || !name.trim() || !gender || !contact.trim()) {
-      setError("모든 필수 항목을 입력해주세요."); return;
-    }
-    if (!email.endsWith("@inha.ac.kr") && !email.endsWith("@inha.edu")) {
-      setError("인하대학교 이메일(@inha.ac.kr 또는 @inha.edu)만 사용 가능합니다."); return;
-    }
+    const { email, studentId, password, name, gender, contact } = form;
+    if (!email || !studentId || !password || !name || !gender || !contact) { setError("모든 필수 항목을 입력해주세요."); return; }
+    if (!email.endsWith("@inha.ac.kr") && !email.endsWith("@inha.edu")) { setError("인하대학교 이메일만 사용 가능합니다."); return; }
     setLoading(true); setError("");
     try {
-      await api.signup({ email, password, name, studentId: signupStudentId, gender, contact });
-      alert("회원가입이 완료되었습니다!");
-      navigate("/login");
-    } catch (e) {
-      const msgs = Object.values(e || {}).join(" / ");
-      setError(msgs || "회원가입에 실패했습니다.");
-    } finally { setLoading(false); }
+      await api.signup({ email, password, name, studentId, gender, contact });
+      alert("회원가입이 완료되었습니다!"); navigate("/login");
+    } catch (e) { setError(Object.values(e || {}).join(" / ") || "회원가입에 실패했습니다."); }
+    finally { setLoading(false); }
   };
 
   return (
     <div className="box">
       <h2>회원가입</h2>
-      <input type="text" placeholder="이메일 (@inha.ac.kr 또는 @inha.edu)" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <input type="text" placeholder="학번" value={signupStudentId} onChange={(e) => setSignupStudentId(e.target.value)} />
-      <input type="password" placeholder="비밀번호 (8자 이상)" value={password} onChange={(e) => setPassword(e.target.value)} />
-      <input type="text" placeholder="이름" value={name} onChange={(e) => setName(e.target.value)} />
-      <select value={gender} onChange={(e) => setGender(e.target.value)} style={{ width: "100%", padding: "13px", marginBottom: "14px", border: "1px solid #ddd", borderRadius: "12px", fontSize: "15px" }}>
+      <input type="text" placeholder="이메일 (@inha.ac.kr 또는 @inha.edu)" value={form.email} onChange={set("email")} />
+      <input type="text" placeholder="학번" value={form.studentId} onChange={set("studentId")} />
+      <input type="password" placeholder="비밀번호 (8자 이상)" value={form.password} onChange={set("password")} />
+      <input type="text" placeholder="이름" value={form.name} onChange={set("name")} />
+      <select value={form.gender} onChange={set("gender")} style={{ width: "100%", padding: "13px", marginBottom: "14px", border: "1px solid #ddd", borderRadius: "12px", fontSize: "15px" }}>
         <option value="">성별 선택</option>
         <option value="MALE">남성</option>
         <option value="FEMALE">여성</option>
       </select>
-      <input type="text" placeholder="연락처 (010-xxxx-xxxx)" value={contact} onChange={(e) => setContact(formatPhone(e.target.value))} />
+      <input type="text" placeholder="연락처 (010-xxxx-xxxx)" value={form.contact} onChange={(e) => setForm((f) => ({ ...f, contact: formatPhone(e.target.value) }))} />
       {error && <p style={{ color: "#e24b4a", fontSize: "13px", margin: "4px 0" }}>{error}</p>}
       <button onClick={handleSignup} disabled={loading}>{loading ? "처리 중..." : "회원가입 완료"}</button>
       <button className="back" onClick={() => navigate("/")}>뒤로가기</button>
@@ -229,19 +271,14 @@ function ProfileCreateBox() {
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const handleSubmit = async () => {
-    const { name, contact, department, domains } = form;
-    if (!name.trim() || !contact.trim() || !department.trim() || !domains.trim()) {
-      setError("이름, 연락처, 학과, 관심분야는 필수 입력 사항입니다."); return;
-    }
+    if (!form.name || !form.contact || !form.department || !form.domains) { setError("이름, 연락처, 학과, 관심분야는 필수입니다."); return; }
     setLoading(true); setError("");
     try {
       const updated = await api.createProfile(currentUser.studentId, form);
       setCurrentUser({ ...currentUser, name: updated.name });
       navigate("/home");
-    } catch (e) {
-      const msgs = Object.values(e || {}).join(" / ");
-      setError(msgs || "프로필 작성에 실패했습니다.");
-    } finally { setLoading(false); }
+    } catch (e) { setError(Object.values(e || {}).join(" / ") || "프로필 작성에 실패했습니다."); }
+    finally { setLoading(false); }
   };
 
   return (
@@ -256,14 +293,14 @@ function ProfileCreateBox() {
       <input type="text" placeholder="연락처 * (010-xxxx-xxxx)" value={form.contact} onChange={(e) => setForm((f) => ({ ...f, contact: formatPhone(e.target.value) }))} />
       <input type="text" placeholder="학과 *" value={form.department} onChange={set("department")} />
       <input type="text" placeholder="관심 분야 * (예: 백엔드, AI, 디자인)" value={form.domains} onChange={set("domains")} />
-      <textarea rows="4" placeholder="대외활동 이력 (선택)" value={form.activities} onChange={set("activities")} style={{ wordBreak: "break-all", overflowWrap: "break-word" }} />
+      <textarea rows="4" placeholder="대외활동 이력 (선택)" value={form.activities} onChange={set("activities")} style={{ wordBreak: "break-word", overflowWrap: "break-word" }} />
       {error && <p style={{ color: "#e24b4a", fontSize: "13px", margin: "4px 0" }}>{error}</p>}
       <button onClick={handleSubmit} disabled={loading}>{loading ? "저장 중..." : "프로필 작성 완료"}</button>
     </div>
   );
 }
 
-// ── 마이페이지 프로필 수정 ────────────────────────────────
+// ── 프로필 수정 ───────────────────────────────────────────
 function ProfileEditBox() {
   const { currentUser } = useUser();
   const navigate = useNavigate();
@@ -283,17 +320,14 @@ function ProfileEditBox() {
     setLoading(true); setError("");
     try {
       await api.updateProfile(currentUser.studentId, form);
-      alert("프로필이 수정되었습니다.");
-      navigate("/home");
-    } catch (e) {
-      const msgs = Object.values(e || {}).join(" / ");
-      setError(msgs || "프로필 수정에 실패했습니다.");
-    } finally { setLoading(false); }
+      alert("프로필이 수정되었습니다."); navigate("/home");
+    } catch (e) { setError(Object.values(e || {}).join(" / ") || "프로필 수정에 실패했습니다."); }
+    finally { setLoading(false); }
   };
 
   return (
     <div className="box">
-      <div className="main-top"><HamburgerMenu /></div>
+      <HamburgerMenu />
       <h2>프로필 수정</h2>
       <input type="text" placeholder="이름" value={form.name} onChange={set("name")} />
       <select value={form.gender} onChange={set("gender")} style={{ width: "100%", padding: "13px", marginBottom: "14px", border: "1px solid #ddd", borderRadius: "12px", fontSize: "15px" }}>
@@ -303,7 +337,7 @@ function ProfileEditBox() {
       <input type="text" placeholder="연락처" value={form.contact} onChange={(e) => setForm((f) => ({ ...f, contact: formatPhone(e.target.value) }))} />
       <input type="text" placeholder="학과" value={form.department} onChange={set("department")} />
       <input type="text" placeholder="관심 분야" value={form.domains} onChange={set("domains")} />
-      <textarea rows="4" placeholder="대외활동 이력" value={form.activities} onChange={set("activities")} style={{ wordBreak: "break-all", overflowWrap: "break-word" }} />
+      <textarea rows="4" placeholder="대외활동 이력" value={form.activities} onChange={set("activities")} style={{ wordBreak: "break-word", overflowWrap: "break-word" }} />
       {error && <p style={{ color: "#e24b4a", fontSize: "13px", margin: "4px 0" }}>{error}</p>}
       <button onClick={handleSubmit} disabled={loading}>{loading ? "저장 중..." : "수정 완료"}</button>
       <button className="back" onClick={() => navigate("/home")}>취소</button>
@@ -311,14 +345,13 @@ function ProfileEditBox() {
   );
 }
 
-// ── 홈 (서비스 선택) ──────────────────────────────────────
+// ── 홈 ────────────────────────────────────────────────────
 function HomePage() {
   const { loadPosts } = useUser();
   const navigate = useNavigate();
-
   return (
     <>
-      <div className="main-top"><HamburgerMenu /></div>
+      <HamburgerMenu />
       <div className="service-wrap">
         <div className="service-card" onClick={() => navigate("/meal")}>
           <div className="icon green">👥</div>
@@ -337,53 +370,44 @@ function HomePage() {
 
 // ── 팀플·공모전 목록 ──────────────────────────────────────
 function TeamMainPage() {
-  const { currentUser, setSelectedPost, loadPosts } = useUser();
+  const { currentUser } = useUser();
   const navigate = useNavigate();
   const [allPosts, setAllPosts] = useState([]);
-  const [appliedPostIds, setAppliedPostIds] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [myAppPostIds, setMyAppPostIds] = useState(new Set());
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
-    loadPosts();
-    api.getPosts().then((data) => setAllPosts(data || [])).catch(() => setAllPosts([]));
-    api.getMyApplications().then((apps) => setAppliedPostIds(apps.map((a) => a.postId))).catch(() => {});
+    api.getPosts().then(setAllPosts).catch(() => {});
+    api.getMyApplications().then((apps) => setMyAppPostIds(new Set(apps.map((a) => a.postId)))).catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const filtered = allPosts
-    .filter((p) => p.writerStudentId !== currentUser?.studentId)
-    .filter((p) => !appliedPostIds.includes(p.id))
-    .filter((p) => {
-      if (!searchQuery.trim()) return true;
-      const q = searchQuery.toLowerCase();
-      return p.title?.toLowerCase().includes(q) || p.projectName?.toLowerCase().includes(q);
-    });
+  const filtered = allPosts.filter((p) => {
+    if (p.writerStudentId === currentUser?.studentId) return false;
+    if (myAppPostIds.has(p.id)) return false;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      return p.title.toLowerCase().includes(q) || (p.projectName && p.projectName.toLowerCase().includes(q));
+    }
+    return true;
+  });
 
   return (
     <div className="box wide page-box">
-      <div className="main-top"><HamburgerMenu /></div>
+      <HamburgerMenu />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
         <h2 style={{ margin: 0 }}>팀플·공모전</h2>
         <button className="small-btn" onClick={() => navigate("/posts/write")} style={{ width: "auto", padding: "8px 16px" }}>모집글 작성</button>
       </div>
-      <input type="text" placeholder="제목 또는 프로젝트명으로 검색" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-      <div className="simple-post-list" style={{ maxHeight: "400px", overflowY: "auto" }}>
-        {filtered.length === 0 && (
-          <p style={{ color: "#6b7280", fontSize: "14px", padding: "12px 0" }}>등록된 모집글이 없습니다.</p>
-        )}
+      <input type="text" placeholder="제목 또는 프로젝트명 검색" value={search} onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: "12px" }} />
+      <div className="simple-post-list" style={{ maxHeight: "420px", overflowY: "auto" }}>
+        {filtered.length === 0 && <p style={{ color: "#6b7280", fontSize: "14px", padding: "12px 0" }}>모집글이 없습니다.</p>}
         {filtered.map((post) => (
-          <div
-            className="simple-post"
-            key={post.id}
-            onClick={() => { setSelectedPost(post); navigate(`/posts/${post.id}`); }}
-            style={{ cursor: "pointer" }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h3 style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{post.title}</h3>
+          <div className="simple-post" key={post.id} onClick={() => navigate(`/posts/${post.id}`)} style={{ cursor: "pointer" }}>
+            <div style={{ flex: 1 }}>
+              <h3>{post.title}</h3>
               <p style={{ fontSize: "13px", color: "#6b7280" }}>{post.categoryDescription} · {post.projectName} · {post.maxMembers}명 모집</p>
             </div>
-            <span style={{ fontSize: "12px", color: post.statusDescription === "모집중" ? "#10b981" : "#9ca3af", whiteSpace: "nowrap", marginLeft: "8px" }}>
-              {post.statusDescription}
-            </span>
+            <span style={{ fontSize: "12px", color: "#10b981", fontWeight: 600, marginLeft: "8px", whiteSpace: "nowrap" }}>{post.statusDescription}</span>
           </div>
         ))}
       </div>
@@ -409,9 +433,7 @@ function TeamWritePage() {
     setLoading(true); setError(""); setFieldErrors({});
     try {
       await api.createPost(currentUser.studentId, { ...form, maxMembers: Number(form.maxMembers), deadline: form.deadline + ":00", teamFormationDate: form.teamFormationDate ? form.teamFormationDate + ":00" : null });
-      alert("모집글이 등록되었습니다!");
-      await loadPosts();
-      navigate("/posts");
+      alert("모집글이 등록되었습니다!"); await loadPosts(); navigate("/posts");
     } catch (e) {
       if (typeof e === "object" && !e.message) { setFieldErrors(e); setError("입력 정보를 확인해주세요."); }
       else { setError(e?.message || "모집글 등록에 실패했습니다."); }
@@ -422,7 +444,7 @@ function TeamWritePage() {
 
   return (
     <div className="box">
-      <div className="main-top"><HamburgerMenu /></div>
+      <HamburgerMenu />
       <h2>공모전 모집글 작성</h2>
       <input type="text" placeholder="제목 *" value={form.title} onChange={set("title")} />{fe("title")}
       <select value={form.category} onChange={set("category")} style={{ width: "100%", padding: "13px", marginBottom: "14px", border: "1px solid #ddd", borderRadius: "12px", fontSize: "15px" }}>
@@ -462,8 +484,8 @@ function TeamDetailPage() {
   const [loading, setLoading] = useState(!selectedPost);
   const [applications, setApplications] = useState([]);
   const [applyMsg, setApplyMsg] = useState("");
-  const [selectedApplicant, setSelectedApplicant] = useState(null);
   const isOwner = post && currentUser?.studentId === post.writerStudentId;
+  const isClosed = post?.statusDescription === "마감";
 
   useEffect(() => {
     if (!selectedPost && id) {
@@ -477,24 +499,15 @@ function TeamDetailPage() {
     }
   }, [isOwner, post]);
 
-  const handleApply = () => {
-    api.applyPost(post.id)
-      .then(() => setApplyMsg("지원이 완료되었습니다!"))
-      .catch((e) => setApplyMsg(e?.message || "지원에 실패했습니다."));
-  };
-
   const handleAccept = (appId) => {
-    api.acceptApplication(appId).then(() => {
-      setApplications((prev) => prev.map((a) => a.id === appId ? { ...a, status: "ACCEPTED" } : a));
-      setSelectedApplicant((prev) => prev?.id === appId ? { ...prev, status: "ACCEPTED" } : prev);
-    }).catch((e) => alert(e?.message || "오류가 발생했습니다."));
+    api.acceptApplication(appId)
+      .then(() => setApplications((prev) => prev.map((a) => a.id === appId ? { ...a, status: "ACCEPTED" } : a)))
+      .catch((e) => alert(e?.message || "오류가 발생했습니다."));
   };
-
   const handleReject = (appId) => {
-    api.rejectApplication(appId).then(() => {
-      setApplications((prev) => prev.map((a) => a.id === appId ? { ...a, status: "REJECTED" } : a));
-      setSelectedApplicant((prev) => prev?.id === appId ? { ...prev, status: "REJECTED" } : prev);
-    }).catch((e) => alert(e?.message || "오류가 발생했습니다."));
+    api.rejectApplication(appId)
+      .then(() => setApplications((prev) => prev.map((a) => a.id === appId ? { ...a, status: "REJECTED" } : a)))
+      .catch((e) => alert(e?.message || "오류가 발생했습니다."));
   };
 
   if (loading) return <div className="box wide"><p style={{ color: "#6b7280" }}>불러오는 중...</p></div>;
@@ -502,51 +515,21 @@ function TeamDetailPage() {
 
   return (
     <div className="box wide">
-      <div className="main-top"><HamburgerMenu /></div>
-
-      {/* 지원자 상세 모달 */}
-      {selectedApplicant && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", width: "320px", maxWidth: "90vw" }}>
-            <h3 style={{ marginBottom: "16px", fontSize: "16px" }}>지원자 상세 정보</h3>
-            <p style={{ fontSize: "14px", marginBottom: "8px" }}><strong>이름:</strong> {selectedApplicant.applicantName}</p>
-            <p style={{ fontSize: "14px", marginBottom: "8px" }}><strong>학과:</strong> {selectedApplicant.applicantDepartment}</p>
-            <p style={{ fontSize: "14px", marginBottom: "8px" }}><strong>연락처:</strong> {selectedApplicant.applicantContact || "-"}</p>
-            {selectedApplicant.applicantDomains && <p style={{ fontSize: "14px", marginBottom: "8px" }}><strong>관심분야:</strong> {selectedApplicant.applicantDomains}</p>}
-            {selectedApplicant.applicantActivities && (
-              <p style={{ fontSize: "14px", marginBottom: "8px", wordBreak: "break-all", overflowWrap: "break-word" }}>
-                <strong>활동이력:</strong> {selectedApplicant.applicantActivities}
-              </p>
-            )}
-            {selectedApplicant.status === "PENDING" ? (
-              <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
-                <button onClick={() => handleAccept(selectedApplicant.id)} style={{ flex: 1, padding: "10px", background: "#10b981", color: "#fff", border: "none", borderRadius: "10px", cursor: "pointer", fontSize: "14px" }}>수락</button>
-                <button onClick={() => handleReject(selectedApplicant.id)} style={{ flex: 1, padding: "10px", background: "#e24b4a", color: "#fff", border: "none", borderRadius: "10px", cursor: "pointer", fontSize: "14px" }}>거절</button>
-              </div>
-            ) : (
-              <p style={{ marginTop: "12px", fontSize: "14px", color: selectedApplicant.status === "ACCEPTED" ? "#10b981" : "#e24b4a" }}>
-                {selectedApplicant.status === "ACCEPTED" ? "✓ 수락됨" : "✗ 거절됨"}
-              </p>
-            )}
-            <button className="back" style={{ marginTop: "12px" }} onClick={() => setSelectedApplicant(null)}>닫기</button>
-          </div>
-        </div>
-      )}
-
+      <HamburgerMenu />
       <h2>공모전 모집글 상세</h2>
-      <div className="post" style={{ wordBreak: "break-word", overflowWrap: "break-word" }}>
-        <h3>{post.title}</h3>
+      <div className="post">
+        <h3 style={{ wordBreak: "break-word" }}>{post.title}</h3>
         <p>카테고리: {post.categoryDescription}</p>
         <p>프로젝트명: {post.projectName}</p>
         <p>작성자: {post.writerName}</p>
         <p>모집 인원: {post.maxMembers}명</p>
         <p>활동 방식: {post.activityMethodDescription}</p>
         <p>마감일: {new Date(post.deadline).toLocaleDateString("ko-KR")}</p>
-        {post.preferredQualifications && <p>우대사항: {post.preferredQualifications}</p>}
-        <p style={{ marginTop: "12px" }}>{post.content}</p>
-        {post.message && <p style={{ color: "#6b7280" }}>{post.message}</p>}
+        {post.preferredQualifications && <p style={{ wordBreak: "break-word", overflowWrap: "break-word" }}>우대사항: {post.preferredQualifications}</p>}
+        <p style={{ marginTop: "12px", wordBreak: "break-word", overflowWrap: "break-word" }}>{post.content}</p>
+        {post.message && <p style={{ color: "#6b7280", wordBreak: "break-word", overflowWrap: "break-word" }}>{post.message}</p>}
 
-        {isOwner && post.statusDescription !== "마감" && (
+        {isOwner && !isClosed && (
           <button onClick={() => {
             if (!window.confirm("모집을 마감하시겠습니까?")) return;
             api.closePost(post.id, currentUser.studentId)
@@ -556,37 +539,37 @@ function TeamDetailPage() {
         )}
         {!isOwner && (
           <>
-            <button onClick={handleApply}>지원하기</button>
+            <button onClick={() => {
+              api.applyPost(post.id)
+                .then(() => setApplyMsg("지원이 완료되었습니다!"))
+                .catch((e) => setApplyMsg(e?.message || "지원에 실패했습니다."));
+            }}>지원하기</button>
             {applyMsg && <p style={{ fontSize: "13px", marginTop: "8px", color: applyMsg.includes("완료") ? "#10b981" : "#e24b4a" }}>{applyMsg}</p>}
           </>
         )}
       </div>
 
       {isOwner && (
-        <div style={{ marginTop: "24px" }}>
-          <h3 style={{ fontSize: "15px", marginBottom: "12px" }}>지원자 목록</h3>
-          {applications.length === 0 && <p style={{ color: "#6b7280", fontSize: "14px" }}>아직 지원자가 없습니다.</p>}
-          <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-            {applications.map((app) => (
-              <div key={app.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid #f3f4f6", cursor: "pointer" }}>
-                <div style={{ flex: 1 }} onClick={() => setSelectedApplicant(app)}>
-                  <p style={{ fontWeight: "600", fontSize: "14px" }}>{app.applicantName}</p>
-                  <p style={{ fontSize: "12px", color: "#6b7280" }}>상세 정보 보기 →</p>
-                </div>
-                {app.status === "PENDING" ? (
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button onClick={() => handleAccept(app.id)} style={{ padding: "6px 14px", background: "#10b981", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}>수락</button>
-                    <button onClick={() => handleReject(app.id)} style={{ padding: "6px 14px", background: "#e24b4a", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}>거절</button>
-                  </div>
-                ) : (
-                  <span style={{ fontSize: "13px", color: app.status === "ACCEPTED" ? "#10b981" : "#e24b4a" }}>
-                    {app.status === "ACCEPTED" ? "수락됨" : "거절됨"}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+        <>
+          <ApplicantList applications={applications} setApplications={setApplications} onAccept={handleAccept} onReject={handleReject} isMeal={false} />
+          {isClosed && (
+            <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
+              <button onClick={() => {
+                if (!window.confirm("수락된 지원자들과 채팅방을 개설하시겠습니까?")) return;
+                api.confirmPost(post.id)
+                  .then(() => { alert("채팅방이 개설되었습니다!"); navigate("/chat"); })
+                  .catch((e) => alert(e?.message || "오류가 발생했습니다."));
+              }} style={{ flex: 1, background: "#10b981" }}>그룹 확정</button>
+              <button onClick={() => navigate("/my-posts")} style={{ flex: 1, background: "#6b7280" }}>보류</button>
+              <button onClick={() => {
+                if (!window.confirm("모집을 취소하면 복구할 수 없습니다. 진행하시겠습니까?")) return;
+                api.cancelPost(post.id)
+                  .then(() => { alert("모집이 취소되었습니다."); navigate("/my-posts"); })
+                  .catch((e) => alert(e?.message || "오류가 발생했습니다."));
+              }} style={{ flex: 1, background: "#e24b4a" }}>모집 취소</button>
+            </div>
+          )}
+        </>
       )}
 
       <button className="back" onClick={() => navigate(-1)}>뒤로가기</button>
@@ -599,48 +582,43 @@ function MealPage() {
   const { currentUser } = useUser();
   const navigate = useNavigate();
   const [allPosts, setAllPosts] = useState([]);
+  const [myAppPostIds, setMyAppPostIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
-    api.getMealPosts().then(setAllPosts).catch(() => setAllPosts([])).finally(() => setLoading(false));
+    api.getMealPosts().then(setAllPosts).catch(() => {}).finally(() => setLoading(false));
+    api.getMyMealApplications().then((apps) => setMyAppPostIds(new Set(apps.map((a) => a.postId)))).catch(() => {});
   }, []);
 
-  const filtered = allPosts
-    .filter((p) => p.writerStudentId !== currentUser?.studentId)
-    .filter((p) => {
-      if (!searchQuery.trim()) return true;
-      const q = searchQuery.toLowerCase();
-      return p.title?.toLowerCase().includes(q) || p.location?.toLowerCase().includes(q);
-    });
+  const filtered = allPosts.filter((p) => {
+    if (p.writerStudentId === currentUser?.studentId) return false;
+    if (myAppPostIds.has(p.id)) return false;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      return p.title.toLowerCase().includes(q) || (p.location && p.location.toLowerCase().includes(q));
+    }
+    return true;
+  });
 
   return (
     <div className="box wide page-box">
-      <div className="main-top"><HamburgerMenu /></div>
+      <HamburgerMenu />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
         <h2 style={{ margin: 0 }}>밥친구</h2>
         <button className="small-btn" onClick={() => navigate("/meal/write")} style={{ width: "auto", padding: "8px 16px" }}>모집글 작성</button>
       </div>
-      <input type="text" placeholder="제목 또는 장소로 검색" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-      {loading && <p style={{ color: "#6b7280", fontSize: "14px" }}>불러오는 중...</p>}
-      <div className="simple-post-list" style={{ maxHeight: "400px", overflowY: "auto" }}>
-        {!loading && filtered.length === 0 && <p style={{ color: "#6b7280", fontSize: "14px", padding: "12px 0" }}>등록된 밥친구 모집글이 없습니다.</p>}
+      <input type="text" placeholder="제목 또는 장소 검색" value={search} onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: "12px" }} />
+      <div className="simple-post-list" style={{ maxHeight: "420px", overflowY: "auto" }}>
+        {loading && <p style={{ color: "#6b7280", fontSize: "14px" }}>불러오는 중...</p>}
+        {!loading && filtered.length === 0 && <p style={{ color: "#6b7280", fontSize: "14px", padding: "12px 0" }}>모집글이 없습니다.</p>}
         {filtered.map((post) => (
-          <div
-            className="simple-post"
-            key={post.id}
-            onClick={() => navigate(`/meal/${post.id}`)}
-            style={{ cursor: "pointer" }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h3 style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{post.title}</h3>
-              <p style={{ fontSize: "13px", color: "#6b7280" }}>
-                {post.location} · {new Date(post.mealTime).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })} · 최대 {post.maxMembers}명
-              </p>
+          <div className="simple-post" key={post.id} onClick={() => navigate(`/meal/${post.id}`)} style={{ cursor: "pointer" }}>
+            <div style={{ flex: 1 }}>
+              <h3>{post.title}</h3>
+              <p style={{ fontSize: "13px", color: "#6b7280" }}>{post.location} · {new Date(post.mealTime).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })} · 최대 {post.maxMembers}명</p>
             </div>
-            <span style={{ fontSize: "12px", color: post.status === "RECRUITING" ? "#10b981" : "#9ca3af", whiteSpace: "nowrap", marginLeft: "8px" }}>
-              {post.status === "RECRUITING" ? "모집중" : "마감"}
-            </span>
+            <span style={{ fontSize: "12px", color: "#10b981", fontWeight: 600, marginLeft: "8px", whiteSpace: "nowrap" }}>{post.status === "RECRUITING" ? "모집중" : "마감"}</span>
           </div>
         ))}
       </div>
@@ -653,35 +631,29 @@ function MealPage() {
 function MealWritePage() {
   const { currentUser } = useUser();
   const navigate = useNavigate();
-  const [title, setTitle] = useState("");
-  const [location, setLocation] = useState("");
-  const [mealTime, setMealTime] = useState("");
-  const [maxMembers, setMaxMembers] = useState("");
-  const [content, setContent] = useState("");
+  const [form, setForm] = useState({ title: "", location: "", mealTime: "", maxMembers: "", content: "" });
   const [loading, setLoading] = useState(false);
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const handleSubmit = async () => {
-    if (!title.trim() || !location.trim() || !mealTime || !maxMembers) {
-      alert("제목, 장소, 시간, 모집인원은 필수입니다."); return;
-    }
+    if (!form.title || !form.location || !form.mealTime || !form.maxMembers) { alert("제목, 장소, 시간, 모집인원은 필수입니다."); return; }
     setLoading(true);
     try {
-      await api.createMealPost(currentUser.studentId, { title, location, mealTime, maxMembers: parseInt(maxMembers), content });
-      alert("밥친구 모집글이 등록되었습니다!");
-      navigate("/meal");
+      await api.createMealPost(currentUser.studentId, { ...form, maxMembers: parseInt(form.maxMembers) });
+      alert("밥친구 모집글이 등록되었습니다!"); navigate("/meal");
     } catch { alert("등록에 실패했습니다."); }
     finally { setLoading(false); }
   };
 
   return (
     <div className="box">
-      <div className="main-top"><HamburgerMenu /></div>
+      <HamburgerMenu />
       <h2>밥친구 모집글 작성</h2>
-      <input type="text" placeholder="제목" value={title} onChange={(e) => setTitle(e.target.value)} />
-      <input type="text" placeholder="장소" value={location} onChange={(e) => setLocation(e.target.value)} />
-      <input type="datetime-local" value={mealTime} onChange={(e) => setMealTime(e.target.value)} style={{ width: "100%", padding: "13px", marginBottom: "14px", border: "1px solid #ddd", borderRadius: "12px", fontSize: "15px" }} />
-      <input type="number" placeholder="모집 인원 (최소 2명)" min="2" value={maxMembers} onChange={(e) => setMaxMembers(e.target.value)} />
-      <textarea rows="5" placeholder="내용" value={content} onChange={(e) => setContent(e.target.value)} style={{ width: "100%", padding: "13px", marginBottom: "14px", border: "1px solid #ddd", borderRadius: "12px", fontSize: "15px", resize: "vertical" }} />
+      <input type="text" placeholder="제목" value={form.title} onChange={set("title")} />
+      <input type="text" placeholder="장소" value={form.location} onChange={set("location")} />
+      <input type="datetime-local" value={form.mealTime} onChange={set("mealTime")} style={{ width: "100%", padding: "13px", marginBottom: "14px", border: "1px solid #ddd", borderRadius: "12px", fontSize: "15px" }} />
+      <input type="number" placeholder="모집 인원 (최소 2명)" min="2" value={form.maxMembers} onChange={set("maxMembers")} />
+      <textarea rows="5" placeholder="내용 (선택)" value={form.content} onChange={set("content")} style={{ width: "100%", padding: "13px", marginBottom: "14px", border: "1px solid #ddd", borderRadius: "12px", fontSize: "15px", resize: "vertical" }} />
       <button onClick={handleSubmit} disabled={loading}>{loading ? "처리 중..." : "등록"}</button>
       <button className="back" onClick={() => navigate("/meal")}>취소</button>
     </div>
@@ -694,39 +666,90 @@ function MealDetailPage() {
   const { currentUser } = useUser();
   const navigate = useNavigate();
   const [post, setPost] = useState(null);
+  const [applications, setApplications] = useState([]);
+  const [applyMsg, setApplyMsg] = useState("");
+  const isOwner = post && currentUser?.studentId === post.writerStudentId;
+  const isClosed = post?.status === "CLOSED";
 
   useEffect(() => {
     api.getMealPost(postId).then(setPost).catch(() => navigate("/meal"));
   }, [postId, navigate]);
 
-  const handleClose = async () => {
-    if (!window.confirm("모집을 마감하시겠습니까?")) return;
-    try {
-      await api.closeMealPost(postId, currentUser.studentId);
-      alert("마감되었습니다.");
-      setPost((p) => ({ ...p, status: "CLOSED" }));
-    } catch { alert("마감에 실패했습니다."); }
+  useEffect(() => {
+    if (isOwner && post) {
+      api.getMealApplications(post.id).then(setApplications).catch(() => {});
+    }
+  }, [isOwner, post]);
+
+  const handleAccept = (appId) => {
+    api.acceptMealApplication(appId)
+      .then(() => setApplications((prev) => prev.map((a) => a.id === appId ? { ...a, status: "ACCEPTED" } : a)))
+      .catch((e) => alert(e?.message || "오류"));
+  };
+  const handleReject = (appId) => {
+    api.rejectMealApplication(appId)
+      .then(() => setApplications((prev) => prev.map((a) => a.id === appId ? { ...a, status: "REJECTED" } : a)))
+      .catch((e) => alert(e?.message || "오류"));
   };
 
   if (!post) return <div className="box"><p>불러오는 중...</p></div>;
-  const isWriter = currentUser?.studentId === post.writerStudentId;
 
   return (
     <div className="box wide">
-      <div className="main-top"><HamburgerMenu /></div>
+      <HamburgerMenu />
       <h2>밥친구 모집글 상세</h2>
-      <div className="post" style={{ wordBreak: "break-word", overflowWrap: "break-word" }}>
-        <h3>{post.title}</h3>
+      <div className="post">
+        <h3 style={{ wordBreak: "break-word" }}>{post.title}</h3>
         <p>장소: {post.location}</p>
         <p>시간: {new Date(post.mealTime).toLocaleString("ko-KR")}</p>
         <p>최대 인원: {post.maxMembers}명</p>
         <p>작성자: {post.writerName}</p>
-        <p>상태: {post.status === "RECRUITING" ? "모집중" : "마감"}</p>
-        {post.content && <p style={{ marginTop: "8px" }}>{post.content}</p>}
-        {isWriter && post.status === "RECRUITING" && (
-          <button onClick={handleClose} style={{ marginTop: "8px", background: "#e24b4a" }}>조기마감</button>
+        <p>상태: <span style={{ color: isClosed ? "#e24b4a" : "#10b981", fontWeight: 600 }}>{isClosed ? "마감" : "모집중"}</span></p>
+        {post.content && <p style={{ marginTop: "8px", wordBreak: "break-word", overflowWrap: "break-word" }}>{post.content}</p>}
+
+        {isOwner && !isClosed && (
+          <button onClick={() => {
+            if (!window.confirm("모집을 마감하시겠습니까?")) return;
+            api.closeMealPost(postId, currentUser.studentId)
+              .then(() => { alert("마감되었습니다."); setPost((p) => ({ ...p, status: "CLOSED" })); })
+              .catch(() => alert("마감에 실패했습니다."));
+          }} style={{ marginTop: "8px", background: "#e24b4a" }}>조기마감</button>
+        )}
+        {!isOwner && (
+          <>
+            <button onClick={() => {
+              api.applyMealPost(post.id)
+                .then(() => setApplyMsg("지원이 완료되었습니다!"))
+                .catch((e) => setApplyMsg(e?.message || "지원에 실패했습니다."));
+            }}>지원하기</button>
+            {applyMsg && <p style={{ fontSize: "13px", marginTop: "8px", color: applyMsg.includes("완료") ? "#10b981" : "#e24b4a" }}>{applyMsg}</p>}
+          </>
         )}
       </div>
+
+      {isOwner && (
+        <>
+          <ApplicantList applications={applications} setApplications={setApplications} onAccept={handleAccept} onReject={handleReject} isMeal={true} />
+          {isClosed && (
+            <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
+              <button onClick={() => {
+                if (!window.confirm("수락된 지원자들과 채팅방을 개설하시겠습니까?")) return;
+                api.confirmMealPost(post.id)
+                  .then(() => { alert("채팅방이 개설되었습니다!"); navigate("/chat"); })
+                  .catch((e) => alert(e?.message || "오류"));
+              }} style={{ flex: 1, background: "#10b981" }}>그룹 확정</button>
+              <button onClick={() => navigate("/my-posts")} style={{ flex: 1, background: "#6b7280" }}>보류</button>
+              <button onClick={() => {
+                if (!window.confirm("모집을 취소하면 복구할 수 없습니다.")) return;
+                api.cancelMealPost(post.id)
+                  .then(() => { alert("취소되었습니다."); navigate("/my-posts"); })
+                  .catch((e) => alert(e?.message || "오류"));
+              }} style={{ flex: 1, background: "#e24b4a" }}>모집 취소</button>
+            </div>
+          )}
+        </>
+      )}
+
       <button className="back" onClick={() => navigate("/meal")}>뒤로가기</button>
     </div>
   );
@@ -734,86 +757,166 @@ function MealDetailPage() {
 
 // ── 내 모집글 ─────────────────────────────────────────────
 function MyPostsPage() {
-  const { currentUser, setSelectedPost } = useUser();
   const navigate = useNavigate();
-  const [posts, setPosts] = useState([]);
+  const [teamPosts, setTeamPosts] = useState([]);
+  const [mealPosts, setMealPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.getPosts()
-      .then((all) => setPosts((all || []).filter((p) => p.writerStudentId === currentUser.studentId)))
-      .catch(() => setPosts([]))
-      .finally(() => setLoading(false));
-  }, [currentUser.studentId]);
+    Promise.all([
+      api.getMyPosts().catch(() => []),
+      api.getMyMealPosts().catch(() => []),
+    ]).then(([team, meal]) => { setTeamPosts(team || []); setMealPosts(meal || []); }).finally(() => setLoading(false));
+  }, []);
+
+  const StatusBadge = ({ closed }) => (
+    <span style={{ fontSize: "12px", fontWeight: 700, color: closed ? "#ef4444" : "#10b981", background: closed ? "#fef2f2" : "#f0fdf4", padding: "2px 8px", borderRadius: "8px", marginLeft: "8px", whiteSpace: "nowrap" }}>
+      {closed ? "모집 종료" : "모집 중"}
+    </span>
+  );
 
   return (
     <div className="box wide page-box">
-      <div className="main-top"><HamburgerMenu /></div>
+      <HamburgerMenu />
       <h2>내 모집글</h2>
       {loading && <p style={{ color: "#6b7280", fontSize: "14px" }}>불러오는 중...</p>}
-      {!loading && posts.length === 0 && <p style={{ color: "#6b7280", fontSize: "14px", padding: "12px 0" }}>작성한 모집글이 없습니다.</p>}
-      <div className="simple-post-list" style={{ maxHeight: "400px", overflowY: "auto" }}>
-        {posts.map((post) => (
-          <div className="simple-post" key={post.id} onClick={() => { setSelectedPost(post); navigate(`/posts/${post.id}`); }} style={{ cursor: "pointer" }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <span className="post-tag">{post.categoryDescription}</span>
-              <h3 style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{post.title}</h3>
-              <p style={{ fontSize: "13px", color: "#6b7280" }}>{post.projectName} · {post.statusDescription}</p>
-              <p style={{ fontSize: "12px", color: "#9ca3af" }}>마감 {post.deadline ? new Date(post.deadline).toLocaleDateString("ko-KR") : "-"}</p>
-            </div>
+      {!loading && teamPosts.length === 0 && mealPosts.length === 0 && (
+        <p style={{ color: "#6b7280", fontSize: "14px", padding: "12px 0" }}>작성한 모집글이 없습니다.</p>
+      )}
+
+      {teamPosts.length > 0 && (
+        <>
+          <h3 style={{ fontSize: "14px", color: "#6b7280", margin: "12px 0 8px" }}>팀플·공모전</h3>
+          <div className="simple-post-list" style={{ maxHeight: "240px", overflowY: "auto" }}>
+            {teamPosts.map((post) => {
+              const closed = post.statusDescription === "마감";
+              return (
+                <div className="simple-post" key={post.id} onClick={() => navigate(`/posts/${post.id}`)} style={{ cursor: "pointer" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "4px" }}>
+                      <span className="post-tag">{post.categoryDescription}</span>
+                      <span style={{ fontSize: "14px", fontWeight: 600, wordBreak: "break-word" }}>{post.title}</span>
+                      <StatusBadge closed={closed} />
+                    </div>
+                    <p style={{ fontSize: "12px", color: "#9ca3af" }}>{post.projectName} · 마감 {post.deadline ? new Date(post.deadline).toLocaleDateString("ko-KR") : "-"}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
+        </>
+      )}
+
+      {mealPosts.length > 0 && (
+        <>
+          <h3 style={{ fontSize: "14px", color: "#6b7280", margin: "16px 0 8px" }}>밥친구</h3>
+          <div className="simple-post-list" style={{ maxHeight: "240px", overflowY: "auto" }}>
+            {mealPosts.map((post) => {
+              const closed = post.status === "CLOSED";
+              return (
+                <div className="simple-post" key={post.id} onClick={() => navigate(`/meal/${post.id}`)} style={{ cursor: "pointer" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "4px" }}>
+                      <span style={{ fontSize: "14px", fontWeight: 600, wordBreak: "break-word" }}>{post.title}</span>
+                      <StatusBadge closed={closed} />
+                    </div>
+                    <p style={{ fontSize: "12px", color: "#9ca3af" }}>{post.location} · {new Date(post.mealTime).toLocaleDateString("ko-KR")}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
       <button className="back" onClick={() => navigate("/home")}>홈으로</button>
     </div>
   );
 }
 
 // ── 내 지원 현황 ──────────────────────────────────────────
-const STATUS_STYLE = {
-  PENDING:  { label: "지원 중", bg: "#f3f4f6", color: "#6b7280" },
-  ACCEPTED: { label: "승인",   bg: "#dcfce7", color: "#16a34a" },
-  REJECTED: { label: "거절",   bg: "#fce7f3", color: "#db2777" },
-};
-
 function MyApplicationsPage() {
-  const { setSelectedPost } = useUser();
   const navigate = useNavigate();
-  const [apps, setApps] = useState([]);
+  const [teamApps, setTeamApps] = useState([]);
+  const [mealApps, setMealApps] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.getMyApplications().then(setApps).catch(() => setApps([])).finally(() => setLoading(false));
+    Promise.all([
+      api.getMyApplications().catch(() => []),
+      api.getMyMealApplications().catch(() => []),
+    ]).then(([team, meal]) => { setTeamApps(team || []); setMealApps(meal || []); }).finally(() => setLoading(false));
   }, []);
+
+  const statusStyle = (status) => {
+    if (status === "ACCEPTED") return { color: "#15803d", background: "#dcfce7", border: "1px solid #bbf7d0" };
+    if (status === "REJECTED") return { color: "#b91c1c", background: "#fee2e2", border: "1px solid #fecaca" };
+    return { color: "#9ca3af", background: "#f9fafb", border: "1px solid #e5e7eb" };
+  };
+  const statusLabel = (s) => s === "ACCEPTED" ? "승인" : s === "REJECTED" ? "거절" : "지원 중";
+
+  const handleTeamClick = (app) => {
+    if (app.applicationStatus === "REJECTED") {
+      alert("거절되었습니다.");
+      setTeamApps((prev) => prev.filter((a) => a.applicationId !== app.applicationId));
+      return;
+    }
+    navigate(`/posts/${app.postId}`);
+  };
+
+  const handleMealClick = (app) => {
+    if (app.applicationStatus === "REJECTED") {
+      alert("거절되었습니다.");
+      setMealApps((prev) => prev.filter((a) => a.applicationId !== app.applicationId));
+      return;
+    }
+    navigate(`/meal/${app.postId}`);
+  };
+
+  const AppCard = ({ app, label, onClick }) => {
+    const st = statusStyle(app.applicationStatus);
+    return (
+      <div className="simple-post" onClick={onClick} style={{ cursor: "pointer" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: "14px", fontWeight: 600, wordBreak: "break-word" }}>{app.postTitle}</p>
+          <p style={{ fontSize: "12px", color: "#9ca3af" }}>{label} · 작성자: {app.writerName}</p>
+        </div>
+        <span style={{ fontSize: "12px", fontWeight: 700, padding: "3px 10px", borderRadius: "8px", whiteSpace: "nowrap", marginLeft: "8px", ...st }}>{statusLabel(app.applicationStatus)}</span>
+      </div>
+    );
+  };
 
   return (
     <div className="box wide page-box">
-      <div className="main-top"><HamburgerMenu /></div>
+      <HamburgerMenu />
       <h2>내 지원 현황</h2>
       {loading && <p style={{ color: "#6b7280", fontSize: "14px" }}>불러오는 중...</p>}
-      {!loading && apps.length === 0 && <p style={{ color: "#6b7280", fontSize: "14px", padding: "12px 0" }}>지원한 모집글이 없습니다.</p>}
-      <div className="simple-post-list" style={{ maxHeight: "400px", overflowY: "auto" }}>
-        {apps.map((app) => {
-          const s = STATUS_STYLE[app.applicationStatus] || STATUS_STYLE.PENDING;
-          return (
-            <div
-              key={app.applicationId}
-              className="simple-post"
-              style={{ cursor: "pointer" }}
-              onClick={() => { setSelectedPost(null); navigate(`/posts/${app.postId}`); }}
-            >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <h3 style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{app.postTitle}</h3>
-                <p style={{ fontSize: "13px", color: "#6b7280" }}>{app.categoryDescription} · {app.projectName}</p>
-                <p style={{ fontSize: "12px", color: "#9ca3af" }}>작성자: {app.writerName}</p>
-              </div>
-              <span style={{ fontSize: "12px", fontWeight: "600", padding: "4px 10px", borderRadius: "20px", background: s.bg, color: s.color, whiteSpace: "nowrap", marginLeft: "8px" }}>
-                {s.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+      {!loading && teamApps.length === 0 && mealApps.length === 0 && (
+        <p style={{ color: "#6b7280", fontSize: "14px", padding: "12px 0" }}>지원한 글이 없습니다.</p>
+      )}
+
+      {teamApps.length > 0 && (
+        <>
+          <h3 style={{ fontSize: "14px", color: "#6b7280", margin: "12px 0 8px" }}>팀플·공모전</h3>
+          <div className="simple-post-list" style={{ maxHeight: "240px", overflowY: "auto" }}>
+            {teamApps.map((app) => (
+              <AppCard key={app.applicationId} app={app} label={`${app.categoryDescription} · ${app.projectName}`} onClick={() => handleTeamClick(app)} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {mealApps.length > 0 && (
+        <>
+          <h3 style={{ fontSize: "14px", color: "#6b7280", margin: "16px 0 8px" }}>밥친구</h3>
+          <div className="simple-post-list" style={{ maxHeight: "240px", overflowY: "auto" }}>
+            {mealApps.map((app) => (
+              <AppCard key={app.applicationId} app={app} label={app.location} onClick={() => handleMealClick(app)} />
+            ))}
+          </div>
+        </>
+      )}
+
       <button className="back" onClick={() => navigate("/home")}>홈으로</button>
     </div>
   );
@@ -831,17 +934,14 @@ function ChatListPage() {
 
   return (
     <div className="box wide page-box">
-      <div className="main-top"><HamburgerMenu /></div>
+      <HamburgerMenu />
       <h2>채팅</h2>
       {loading && <p style={{ color: "#6b7280", fontSize: "14px" }}>불러오는 중...</p>}
       {!loading && rooms.length === 0 && <p style={{ color: "#6b7280", fontSize: "14px", padding: "12px 0" }}>참여 중인 채팅방이 없습니다.</p>}
       <div className="simple-post-list">
         {rooms.map((room) => (
           <div className="simple-post" key={room.id} onClick={() => navigate(`/chat/${room.id}`)} style={{ cursor: "pointer" }}>
-            <div>
-              <h3>{room.name}</h3>
-              <p>{room.memberNames.join(", ")}</p>
-            </div>
+            <div><h3>{room.name}</h3><p>{room.memberNames.join(", ")}</p></div>
           </div>
         ))}
       </div>
@@ -861,18 +961,15 @@ function ChatRoomPage() {
   const bottomRef = useRef(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    api.getChatMessages(roomId).then(setMessages).catch(() => {});
-  }, [roomId]);
+  useEffect(() => { api.getChatMessages(roomId).then(setMessages).catch(() => {}); }, [roomId]);
 
   useEffect(() => {
     const client = new Client({
-      webSocketFactory: () => new SockJS("http://localhost:8080/ws"),
+      webSocketFactory: () => new SockJS("https://inhalink.onrender.com/ws"),
       onConnect: () => {
         setConnected(true);
         client.subscribe(`/topic/chat/${roomId}`, (frame) => {
-          const msg = JSON.parse(frame.body);
-          setMessages((prev) => [...prev, msg]);
+          setMessages((prev) => [...prev, JSON.parse(frame.body)]);
         });
       },
       onDisconnect: () => setConnected(false),
@@ -882,9 +979,7 @@ function ChatRoomPage() {
     return () => client.deactivate();
   }, [roomId]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   const sendMessage = () => {
     if (!input.trim() || !connected) return;
@@ -892,18 +987,13 @@ function ChatRoomPage() {
     setInput("");
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  };
-
   return (
     <div className="box wide" style={{ display: "flex", flexDirection: "column", height: "80vh" }}>
+      <HamburgerMenu />
       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
         <button className="back" onClick={() => navigate("/chat")} style={{ margin: 0 }}>←</button>
         <h2 style={{ margin: 0 }}>채팅</h2>
-        <span style={{ fontSize: "12px", color: connected ? "#10b981" : "#e24b4a", marginLeft: "auto" }}>
-          {connected ? "● 연결됨" : "● 연결 중..."}
-        </span>
+        <span style={{ fontSize: "12px", color: connected ? "#10b981" : "#e24b4a", marginLeft: "auto" }}>{connected ? "● 연결됨" : "● 연결 중..."}</span>
       </div>
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 0", display: "flex", flexDirection: "column", gap: "8px" }}>
         {messages.map((msg, i) => {
@@ -911,28 +1001,16 @@ function ChatRoomPage() {
           return (
             <div key={msg.id || i} style={{ display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start" }}>
               {!isMine && <span style={{ fontSize: "12px", color: "#6b7280", marginBottom: "2px" }}>{msg.senderName}</span>}
-              <div style={{ maxWidth: "70%", padding: "8px 12px", borderRadius: "12px", background: isMine ? "#6c63ff" : "#f3f4f6", color: isMine ? "#fff" : "#111", fontSize: "14px", wordBreak: "break-word" }}>
-                {msg.content}
-              </div>
-              <span style={{ fontSize: "11px", color: "#9ca3af", marginTop: "2px" }}>
-                {msg.sentAt ? new Date(msg.sentAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : ""}
-              </span>
+              <div style={{ maxWidth: "70%", padding: "8px 12px", borderRadius: "12px", background: isMine ? "#6c63ff" : "#f3f4f6", color: isMine ? "#fff" : "#111", fontSize: "14px", wordBreak: "break-word" }}>{msg.content}</div>
+              <span style={{ fontSize: "11px", color: "#9ca3af", marginTop: "2px" }}>{msg.sentAt ? new Date(msg.sentAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : ""}</span>
             </div>
           );
         })}
         <div ref={bottomRef} />
       </div>
       <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
-        <input
-          style={{ flex: 1, padding: "10px 14px", borderRadius: "12px", border: "1px solid #ddd", fontSize: "14px" }}
-          placeholder="메시지를 입력하세요"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
-        <button onClick={sendMessage} disabled={!connected} style={{ padding: "10px 18px", borderRadius: "12px", background: "#6c63ff", color: "#fff", border: "none", cursor: "pointer", fontSize: "14px" }}>
-          전송
-        </button>
+        <input style={{ flex: 1, padding: "10px 14px", borderRadius: "12px", border: "1px solid #ddd", fontSize: "14px" }} placeholder="메시지를 입력하세요" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} />
+        <button onClick={sendMessage} disabled={!connected} style={{ padding: "10px 18px", borderRadius: "12px", background: "#6c63ff", color: "#fff", border: "none", cursor: "pointer", fontSize: "14px" }}>전송</button>
       </div>
     </div>
   );

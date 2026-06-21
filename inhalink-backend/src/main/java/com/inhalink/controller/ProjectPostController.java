@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -54,6 +55,26 @@ public class ProjectPostController {
         Long newPostId = projectPostService.createPost(studentId, request);
         PostCreateResponse data = new PostCreateResponse(newPostId, "모집글이 성공적으로 작성되었습니다.");
         return ResponseEntity.ok(ApiResponse.success("성공", data));
+    }
+
+    @Operation(summary = "내 모집글 목록 조회")
+    @GetMapping("/my")
+    public ResponseEntity<ApiResponse<List<ProjectPostResponse>>> getMyPosts(Authentication auth) {
+        return ResponseEntity.ok(ApiResponse.success("조회 성공", projectPostService.getMyPosts((String) auth.getPrincipal())));
+    }
+
+    @Operation(summary = "그룹 확정 (채팅방 개설)")
+    @PostMapping("/{postId}/confirm")
+    public ResponseEntity<ApiResponse<Void>> confirmPost(@PathVariable Long postId, Authentication auth) {
+        projectPostService.confirmPost((String) auth.getPrincipal(), postId);
+        return ResponseEntity.ok(ApiResponse.success("채팅방이 개설되었습니다.", null));
+    }
+
+    @Operation(summary = "모집 취소 (글 삭제)")
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<ApiResponse<Void>> cancelPost(@PathVariable Long postId, Authentication auth) {
+        projectPostService.cancelPost((String) auth.getPrincipal(), postId);
+        return ResponseEntity.ok(ApiResponse.success("모집이 취소되었습니다.", null));
     }
 
 }
