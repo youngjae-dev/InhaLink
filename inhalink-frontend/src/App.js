@@ -621,7 +621,6 @@ function TeamDetailPage() {
 
 // ── 밥친구 ────────────────────────────────────────────────
 function MealPage() {
-  const { currentUser } = useUser();
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
