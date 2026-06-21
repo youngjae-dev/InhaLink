@@ -27,9 +27,7 @@ public class ChatService {
     @Transactional
     public ChatRoomResponse createRoom(String name, List<String> studentIds, ProjectPost post) {
         String creatorId = studentIds.isEmpty() ? null : studentIds.get(0);
-        ChatRoom room = post != null
-                ? ChatRoom.create(name, post, creatorId)
-                : ChatRoom.createDirect(name, creatorId);
+        ChatRoom room = ChatRoom.create(name, post, creatorId);
         chatRoomRepository.save(room);
 
         for (String studentId : studentIds) {
