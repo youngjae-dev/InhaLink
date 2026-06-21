@@ -115,7 +115,7 @@ public class ProjectPostService {
         accepted.forEach(a -> memberIds.add(a.getApplicant().getStudentId()));
 
         chatService.createRoom(post.getTitle() + " 그룹채팅", memberIds, post);
-        projectApplicationRepository.deleteAll(all);
+        projectApplicationRepository.deleteByProjectPostId(postId);
     }
 
     @Transactional
@@ -123,7 +123,7 @@ public class ProjectPostService {
         ProjectPost post = projectPostRepository.findById(postId).orElseThrow(PostNotFoundException::new);
         if (!post.getWriter().getStudentId().equals(studentId)) throw new AccessDeniedException("권한이 없습니다.");
 
-        projectApplicationRepository.deleteAll(projectApplicationRepository.findByProjectPostId(postId));
+        projectApplicationRepository.updateStatusByPostId(postId, ApplicationStatus.CANCELLED);
         projectPostRepository.delete(post);
     }
 }

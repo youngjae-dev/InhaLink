@@ -45,6 +45,7 @@ export const api = {
   acceptApplication: (appId) => request("PATCH", `/applications/${appId}/accept`),
   rejectApplication: (appId) => request("PATCH", `/applications/${appId}/reject`),
   getMyApplications: () => request("GET", "/applications/my"),
+  deleteApplication: (appId) => request("DELETE", `/applications/${appId}`),
 
   // 밥친구 모집글
   getMealPosts: () => request("GET", "/meal-posts"),
@@ -62,6 +63,7 @@ export const api = {
   acceptMealApplication: (appId) => request("PATCH", `/meal-applications/${appId}/accept`),
   rejectMealApplication: (appId) => request("PATCH", `/meal-applications/${appId}/reject`),
   getMyMealApplications: () => request("GET", "/meal-applications/my"),
+  deleteMealApplication: (appId) => request("DELETE", `/meal-applications/${appId}`),
 
   // 채팅
   getMyChatRooms: () => request("GET", "/chat/rooms"),

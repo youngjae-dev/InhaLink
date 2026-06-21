@@ -61,4 +61,11 @@ public class MealApplicationService {
         return mealApplicationRepository.findByApplicantStudentIdOrderByCreatedAtDesc(studentId).stream()
                 .map(MyMealApplicationResponse::new).collect(Collectors.toList());
     }
+
+    @Transactional
+    public void deleteApplication(String studentId, Long appId) {
+        MealApplication app = mealApplicationRepository.findById(appId).orElseThrow(PostNotFoundException::new);
+        if (!app.getApplicant().getStudentId().equals(studentId)) throw new AccessDeniedException("삭제 권한이 없습니다.");
+        mealApplicationRepository.delete(app);
+    }
 }

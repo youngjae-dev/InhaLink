@@ -66,4 +66,13 @@ public class ProjectApplicationController {
         applicationService.updateApplicationStatus(studentId, applicationId, ApplicationStatus.REJECTED);
         return ResponseEntity.ok(ApiResponse.success("거절되었습니다.", null));
     }
+
+    @Operation(summary = "지원 내역 삭제 (본인만)")
+    @DeleteMapping("/api/applications/{applicationId}")
+    public ResponseEntity<ApiResponse<Void>> deleteApplication(
+            @PathVariable Long applicationId,
+            Authentication auth) {
+        applicationService.deleteApplication((String) auth.getPrincipal(), applicationId);
+        return ResponseEntity.ok(ApiResponse.success("삭제되었습니다.", null));
+    }
 }

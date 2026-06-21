@@ -51,4 +51,5 @@ public class MealApplication extends BaseTimeEntity {
 
     public void accept() { this.status = ApplicationStatus.ACCEPTED; }
     public void reject() { this.status = ApplicationStatus.REJECTED; }
+    public void cancel() { this.status = ApplicationStatus.CANCELLED; }
 }

@@ -96,4 +96,14 @@ public class ProjectApplicationService {
             application.reject();
         }
     }
+
+    @Transactional
+    public void deleteApplication(String studentId, Long applicationId) {
+        ProjectApplication application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new PostNotFoundException());
+        if (!application.getApplicant().getStudentId().equals(studentId)) {
+            throw new org.springframework.security.access.AccessDeniedException("삭제 권한이 없습니다.");
+        }
+        applicationRepository.delete(application);
+    }
 }

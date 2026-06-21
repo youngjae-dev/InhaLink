@@ -91,7 +91,7 @@ public class MealPostService {
         accepted.forEach(a -> memberIds.add(a.getApplicant().getStudentId()));
 
         chatService.createRoomDirect(post.getTitle() + " 밥친구채팅", memberIds);
-        mealApplicationRepository.deleteAll(all);
+        mealApplicationRepository.deleteByMealPostId(postId);
     }
 
     @Transactional
@@ -99,7 +99,7 @@ public class MealPostService {
         MealPost post = mealPostRepository.findById(postId).orElseThrow(PostNotFoundException::new);
         if (!post.getWriter().getStudentId().equals(studentId)) throw new AccessDeniedException("권한이 없습니다.");
 
-        mealApplicationRepository.deleteAll(mealApplicationRepository.findByMealPostId(postId));
+        mealApplicationRepository.updateStatusByPostId(postId, ApplicationStatus.CANCELLED);
         mealPostRepository.delete(post);
     }
 }

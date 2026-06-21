@@ -48,4 +48,10 @@ public class MealApplicationController {
         String studentId = (String) auth.getPrincipal();
         return ResponseEntity.ok(ApiResponse.success("조회 성공", mealApplicationService.getMyApplications(studentId)));
     }
+
+    @DeleteMapping("/api/meal-applications/{appId}")
+    public ResponseEntity<ApiResponse<Void>> deleteApplication(@PathVariable Long appId, Authentication auth) {
+        mealApplicationService.deleteApplication((String) auth.getPrincipal(), appId);
+        return ResponseEntity.ok(ApiResponse.success("삭제되었습니다.", null));
+    }
 }

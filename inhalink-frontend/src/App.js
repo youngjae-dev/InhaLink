@@ -1027,13 +1027,26 @@ function MyApplicationsPage() {
   const statusStyle = (status) => {
     if (status === "ACCEPTED") return { color: "#15803d", background: "#dcfce7", border: "1px solid #bbf7d0" };
     if (status === "REJECTED") return { color: "#b91c1c", background: "#fee2e2", border: "1px solid #fecaca" };
+    if (status === "CANCELLED") return { color: "#b91c1c", background: "#fee2e2", border: "1px solid #fecaca" };
     return { color: "#9ca3af", background: "#f9fafb", border: "1px solid #e5e7eb" };
   };
-  const statusLabel = (s) => s === "ACCEPTED" ? "승인" : s === "REJECTED" ? "거절" : "지원 중";
+  const statusLabel = (s) => {
+    if (s === "ACCEPTED") return "승인";
+    if (s === "REJECTED") return "거절";
+    if (s === "CANCELLED") return "모집취소";
+    return "지원 중";
+  };
 
   const handleTeamClick = (app) => {
     if (app.applicationStatus === "REJECTED") {
       alert("거절되었습니다.");
+      api.deleteApplication(app.applicationId).catch(() => {});
+      setTeamApps((prev) => prev.filter((a) => a.applicationId !== app.applicationId));
+      return;
+    }
+    if (app.applicationStatus === "CANCELLED") {
+      alert("모집이 취소된 글입니다.");
+      api.deleteApplication(app.applicationId).catch(() => {});
       setTeamApps((prev) => prev.filter((a) => a.applicationId !== app.applicationId));
       return;
     }
@@ -1043,6 +1056,13 @@ function MyApplicationsPage() {
   const handleMealClick = (app) => {
     if (app.applicationStatus === "REJECTED") {
       alert("거절되었습니다.");
+      api.deleteMealApplication(app.applicationId).catch(() => {});
+      setMealApps((prev) => prev.filter((a) => a.applicationId !== app.applicationId));
+      return;
+    }
+    if (app.applicationStatus === "CANCELLED") {
+      alert("모집이 취소된 글입니다.");
+      api.deleteMealApplication(app.applicationId).catch(() => {});
       setMealApps((prev) => prev.filter((a) => a.applicationId !== app.applicationId));
       return;
     }
