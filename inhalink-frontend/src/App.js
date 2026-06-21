@@ -157,9 +157,11 @@ function App() {
               <Route path="/home" element={<RequireAuth><HomePage /></RequireAuth>} />
               <Route path="/posts" element={<RequireAuth><TeamMainPage /></RequireAuth>} />
               <Route path="/posts/write" element={<RequireAuth><TeamWritePage /></RequireAuth>} />
+              <Route path="/posts/:id/edit" element={<RequireAuth><TeamEditPage /></RequireAuth>} />
               <Route path="/posts/:id" element={<RequireAuth><TeamDetailPage /></RequireAuth>} />
               <Route path="/meal" element={<RequireAuth><MealPage /></RequireAuth>} />
               <Route path="/meal/write" element={<RequireAuth><MealWritePage /></RequireAuth>} />
+              <Route path="/meal/:postId/edit" element={<RequireAuth><MealEditPage /></RequireAuth>} />
               <Route path="/meal/:postId" element={<RequireAuth><MealDetailPage /></RequireAuth>} />
               <Route path="/my-posts" element={<RequireAuth><MyPostsPage /></RequireAuth>} />
               <Route path="/my-applications" element={<RequireAuth><MyApplicationsPage /></RequireAuth>} />
@@ -533,12 +535,15 @@ function TeamDetailPage() {
         {post.message && <p style={{ color: "#6b7280", wordBreak: "break-word", overflowWrap: "break-word" }}>{post.message}</p>}
 
         {isOwner && !isClosed && (
-          <button onClick={() => {
-            if (!window.confirm("모집을 마감하시겠습니까?")) return;
-            api.closePost(post.id, currentUser.studentId)
-              .then(() => { alert("마감되었습니다."); setPost((p) => ({ ...p, statusDescription: "마감" })); })
-              .catch(() => alert("마감에 실패했습니다."));
-          }} style={{ marginTop: "8px", background: "#e24b4a" }}>조기마감</button>
+          <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+            <button onClick={() => navigate(`/posts/${post.id}/edit`)} style={{ background: "#6c63ff" }}>수정</button>
+            <button onClick={() => {
+              if (!window.confirm("모집을 마감하시겠습니까?")) return;
+              api.closePost(post.id, currentUser.studentId)
+                .then(() => { alert("마감되었습니다."); setPost((p) => ({ ...p, statusDescription: "마감" })); })
+                .catch(() => alert("마감에 실패했습니다."));
+            }} style={{ background: "#e24b4a" }}>조기마감</button>
+          </div>
         )}
         {!isOwner && !fromMyApps && (
           <>
@@ -713,12 +718,15 @@ function MealDetailPage() {
         {post.content && <p style={{ marginTop: "8px", wordBreak: "break-word", overflowWrap: "break-word" }}>{post.content}</p>}
 
         {isOwner && !isClosed && (
-          <button onClick={() => {
-            if (!window.confirm("모집을 마감하시겠습니까?")) return;
-            api.closeMealPost(postId, currentUser.studentId)
-              .then(() => { alert("마감되었습니다."); setPost((p) => ({ ...p, status: "CLOSED" })); })
-              .catch(() => alert("마감에 실패했습니다."));
-          }} style={{ marginTop: "8px", background: "#e24b4a" }}>조기마감</button>
+          <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+            <button onClick={() => navigate(`/meal/${post.id}/edit`)} style={{ background: "#6c63ff" }}>수정</button>
+            <button onClick={() => {
+              if (!window.confirm("모집을 마감하시겠습니까?")) return;
+              api.closeMealPost(postId, currentUser.studentId)
+                .then(() => { alert("마감되었습니다."); setPost((p) => ({ ...p, status: "CLOSED" })); })
+                .catch(() => alert("마감에 실패했습니다."));
+            }} style={{ background: "#e24b4a" }}>조기마감</button>
+          </div>
         )}
         {!isOwner && !fromMyApps && (
           <>
@@ -756,6 +764,135 @@ function MealDetailPage() {
       )}
 
       <button className="back" onClick={() => navigate(-1)}>뒤로가기</button>
+    </div>
+  );
+}
+
+// ── 팀플·공모전 수정 ──────────────────────────────────────
+function TeamEditPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ title: "", category: "", projectName: "", content: "", maxMembers: "", deadline: "", teamFormationDate: "", preferredQualifications: "", message: "", activityMethod: "" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  useEffect(() => {
+    api.getPost(id)
+      .then((post) => {
+        const toLocal = (dt) => dt ? dt.replace("T", "T").slice(0, 16) : "";
+        setForm({
+          title: post.title || "",
+          category: post.category || "",
+          projectName: post.projectName || "",
+          content: post.content || "",
+          maxMembers: post.maxMembers || "",
+          deadline: toLocal(post.deadline),
+          teamFormationDate: toLocal(post.teamFormationDate),
+          preferredQualifications: post.preferredQualifications || "",
+          message: post.message || "",
+          activityMethod: post.activityMethod || "",
+        });
+      })
+      .catch(() => { alert("글을 불러오지 못했습니다."); navigate(-1); })
+      .finally(() => setFetching(false));
+  }, [id, navigate]);
+
+  const handleSubmit = async () => {
+    if (!form.title || !form.category || !form.projectName || !form.content || !form.maxMembers || !form.deadline || !form.activityMethod) {
+      setError("필수 항목을 모두 입력해주세요."); return;
+    }
+    setLoading(true); setError("");
+    try {
+      await api.updatePost(id, { ...form, maxMembers: Number(form.maxMembers), deadline: form.deadline + ":00", teamFormationDate: form.teamFormationDate ? form.teamFormationDate + ":00" : null });
+      alert("수정되었습니다!"); navigate(-1);
+    } catch (e) { setError(e?.message || "수정에 실패했습니다."); }
+    finally { setLoading(false); }
+  };
+
+  if (fetching) return <div className="box"><p>불러오는 중...</p></div>;
+
+  return (
+    <div className="box">
+      <HamburgerMenu />
+      <h2>공모전 모집글 수정</h2>
+      <input type="text" placeholder="제목 *" value={form.title} onChange={set("title")} />
+      <select value={form.category} onChange={set("category")} style={{ width: "100%", padding: "13px", marginBottom: "14px", border: "1px solid #ddd", borderRadius: "12px", fontSize: "15px" }}>
+        <option value="">카테고리 선택 *</option>
+        <option value="CONTEST">공모전</option>
+        <option value="TEAM_PROJECT">팀플</option>
+        <option value="PROJECT">프로젝트</option>
+      </select>
+      <input type="text" placeholder="프로젝트/공모전 이름 *" value={form.projectName} onChange={set("projectName")} />
+      <textarea rows="4" placeholder="내용 *" value={form.content} onChange={set("content")} />
+      <input type="number" placeholder="모집 인원 *" value={form.maxMembers} onChange={set("maxMembers")} />
+      <label style={{ fontSize: "13px", color: "#6b7280" }}>모집 마감일 *</label>
+      <input type="datetime-local" value={form.deadline} onChange={set("deadline")} />
+      <label style={{ fontSize: "13px", color: "#6b7280" }}>팀 결성 희망일</label>
+      <input type="datetime-local" value={form.teamFormationDate} onChange={set("teamFormationDate")} />
+      <select value={form.activityMethod} onChange={set("activityMethod")} style={{ width: "100%", padding: "13px", marginBottom: "14px", border: "1px solid #ddd", borderRadius: "12px", fontSize: "15px" }}>
+        <option value="">활동 방식 선택 *</option>
+        <option value="ONLINE">온라인</option>
+        <option value="OFFLINE">오프라인</option>
+        <option value="BOTH">온/오프라인 병행</option>
+      </select>
+      <textarea rows="3" placeholder="우대사항 (선택)" value={form.preferredQualifications} onChange={set("preferredQualifications")} />
+      <textarea rows="3" placeholder="하고 싶은 말 (선택)" value={form.message} onChange={set("message")} />
+      {error && <p style={{ color: "#e24b4a", fontSize: "13px", margin: "4px 0" }}>{error}</p>}
+      <button onClick={handleSubmit} disabled={loading}>{loading ? "저장 중..." : "저장"}</button>
+      <button className="back" onClick={() => navigate(-1)}>취소</button>
+    </div>
+  );
+}
+
+// ── 밥친구 수정 ───────────────────────────────────────────
+function MealEditPage() {
+  const { postId } = useParams();
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ title: "", location: "", mealTime: "", maxMembers: "", content: "" });
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  useEffect(() => {
+    api.getMealPost(postId)
+      .then((post) => {
+        setForm({
+          title: post.title || "",
+          location: post.location || "",
+          mealTime: post.mealTime ? post.mealTime.slice(0, 16) : "",
+          maxMembers: post.maxMembers || "",
+          content: post.content || "",
+        });
+      })
+      .catch(() => { alert("글을 불러오지 못했습니다."); navigate(-1); })
+      .finally(() => setFetching(false));
+  }, [postId, navigate]);
+
+  const handleSubmit = async () => {
+    if (!form.title || !form.location || !form.mealTime || !form.maxMembers) { alert("제목, 장소, 시간, 모집인원은 필수입니다."); return; }
+    setLoading(true);
+    try {
+      await api.updateMealPost(postId, { ...form, maxMembers: parseInt(form.maxMembers) });
+      alert("수정되었습니다!"); navigate(-1);
+    } catch { alert("수정에 실패했습니다."); }
+    finally { setLoading(false); }
+  };
+
+  if (fetching) return <div className="box"><p>불러오는 중...</p></div>;
+
+  return (
+    <div className="box">
+      <HamburgerMenu />
+      <h2>밥친구 모집글 수정</h2>
+      <input type="text" placeholder="제목" value={form.title} onChange={set("title")} />
+      <input type="text" placeholder="장소" value={form.location} onChange={set("location")} />
+      <input type="datetime-local" value={form.mealTime} onChange={set("mealTime")} style={{ width: "100%", padding: "13px", marginBottom: "14px", border: "1px solid #ddd", borderRadius: "12px", fontSize: "15px" }} />
+      <input type="number" placeholder="모집 인원 (최소 2명)" min="2" value={form.maxMembers} onChange={set("maxMembers")} />
+      <textarea rows="5" placeholder="내용 (선택)" value={form.content} onChange={set("content")} style={{ width: "100%", padding: "13px", marginBottom: "14px", border: "1px solid #ddd", borderRadius: "12px", fontSize: "15px", resize: "vertical" }} />
+      <button onClick={handleSubmit} disabled={loading}>{loading ? "저장 중..." : "저장"}</button>
+      <button className="back" onClick={() => navigate(-1)}>취소</button>
     </div>
   );
 }
