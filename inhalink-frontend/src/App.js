@@ -1164,7 +1164,7 @@ function ChatRoomPage() {
             <div key={msg.id || i} style={{ display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start" }}>
               {!isMine && <span style={{ fontSize: "12px", color: "#6b7280", marginBottom: "2px" }}>{msg.senderName}</span>}
               <div style={{ maxWidth: "70%", padding: "8px 12px", borderRadius: "12px", background: isMine ? "#6c63ff" : "#f3f4f6", color: isMine ? "#fff" : "#111", fontSize: "14px", wordBreak: "break-word" }}>{msg.content}</div>
-              <span style={{ fontSize: "11px", color: "#9ca3af", marginTop: "2px" }}>{msg.sentAt ? new Date(msg.sentAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : ""}</span>
+              <span style={{ fontSize: "11px", color: "#9ca3af", marginTop: "2px" }}>{msg.sentAt ? new Date(msg.sentAt + "Z").toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : ""}</span>
             </div>
           );
         })}
