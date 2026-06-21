@@ -45,6 +45,7 @@ function HamburgerMenu() {
               ["👤 프로필 수정", "/profile/edit"],
               ["📋 내 모집글", "/my-posts"],
               ["📝 내 지원 현황", "/my-applications"],
+              ["💬 채팅", "/chat"],
             ].map(([label, path]) => (
               <p key={path} onClick={() => { setOpen(false); navigate(path); }} style={{ cursor: "pointer", padding: "10px 0", borderBottom: "1px solid #f3f4f6" }}>{label}</p>
             ))}
