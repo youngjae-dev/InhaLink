@@ -995,9 +995,9 @@ function ChatRoomPage() {
     <div className="box wide" style={{ display: "flex", flexDirection: "column", height: "80vh" }}>
       <HamburgerMenu />
       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-        <button className="back" onClick={() => navigate("/chat")} style={{ margin: 0 }}>←</button>
-        <h2 style={{ margin: 0 }}>채팅</h2>
-        <span style={{ fontSize: "12px", color: connected ? "#10b981" : "#e24b4a", marginLeft: "auto" }}>{connected ? "● 연결됨" : "● 연결 중..."}</span>
+        <button className="back" onClick={() => navigate("/chat")} style={{ margin: 0, width: "auto", padding: "8px 14px", flexShrink: 0 }}>←</button>
+        <h2 style={{ margin: 0, flexShrink: 0 }}>채팅</h2>
+        <span style={{ fontSize: "12px", color: connected ? "#10b981" : "#e24b4a", marginLeft: "auto", whiteSpace: "nowrap", flexShrink: 0 }}>{connected ? "● 연결됨" : "● 연결 중..."}</span>
       </div>
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 0", display: "flex", flexDirection: "column", gap: "8px" }}>
         {messages.map((msg, i) => {
@@ -1013,8 +1013,8 @@ function ChatRoomPage() {
         <div ref={bottomRef} />
       </div>
       <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
-        <input style={{ flex: 1, padding: "10px 14px", borderRadius: "12px", border: "1px solid #ddd", fontSize: "14px" }} placeholder="메시지를 입력하세요" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} />
-        <button onClick={sendMessage} disabled={!connected} style={{ padding: "10px 18px", borderRadius: "12px", background: "#6c63ff", color: "#fff", border: "none", cursor: "pointer", fontSize: "14px" }}>전송</button>
+        <input style={{ flex: 1, minWidth: 0, padding: "10px 14px", borderRadius: "12px", border: "1px solid #ddd", fontSize: "14px" }} placeholder="메시지를 입력하세요" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} />
+        <button onClick={sendMessage} disabled={!connected} style={{ flexShrink: 0, width: "44px", height: "44px", borderRadius: "50%", background: "#6c63ff", color: "#fff", border: "none", cursor: "pointer", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center" }}>➤</button>
       </div>
     </div>
   );
