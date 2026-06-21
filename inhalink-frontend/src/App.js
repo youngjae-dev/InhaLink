@@ -545,7 +545,13 @@ function TeamDetailPage() {
               api.closePost(post.id, currentUser.studentId)
                 .then(() => { alert("마감되었습니다."); setPost((p) => ({ ...p, statusDescription: "마감" })); })
                 .catch(() => alert("마감에 실패했습니다."));
-            }} style={{ background: "#e24b4a" }}>조기마감</button>
+            }} style={{ background: "#f59e0b" }}>조기마감</button>
+            <button onClick={() => {
+              if (!window.confirm("모집글을 삭제하시겠습니까? 복구할 수 없습니다.")) return;
+              api.cancelPost(post.id)
+                .then(() => { alert("삭제되었습니다."); navigate("/posts"); })
+                .catch((e) => alert(e?.message || "삭제에 실패했습니다."));
+            }} style={{ background: "#e24b4a" }}>삭제</button>
           </div>
         )}
         {!isOwner && !fromMyApps && (
@@ -730,7 +736,13 @@ function MealDetailPage() {
               api.closeMealPost(postId, currentUser.studentId)
                 .then(() => { alert("마감되었습니다."); setPost((p) => ({ ...p, status: "CLOSED" })); })
                 .catch(() => alert("마감에 실패했습니다."));
-            }} style={{ background: "#e24b4a" }}>조기마감</button>
+            }} style={{ background: "#f59e0b" }}>조기마감</button>
+            <button onClick={() => {
+              if (!window.confirm("모집글을 삭제하시겠습니까? 복구할 수 없습니다.")) return;
+              api.cancelMealPost(post.id)
+                .then(() => { alert("삭제되었습니다."); navigate("/meal"); })
+                .catch((e) => alert(e?.message || "삭제에 실패했습니다."));
+            }} style={{ background: "#e24b4a" }}>삭제</button>
           </div>
         )}
         {!isOwner && !fromMyApps && (
