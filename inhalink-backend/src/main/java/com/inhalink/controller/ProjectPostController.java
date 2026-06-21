@@ -36,6 +36,15 @@ public class ProjectPostController {
         return ResponseEntity.ok(ApiResponse.success("조회 성공", post));
     }
 
+    @Operation(summary = "모집글 조기마감", description = "작성자가 모집글을 조기 마감합니다.")
+    @PatchMapping("/{postId}/close")
+    public ResponseEntity<ApiResponse<Void>> closePost(
+            @PathVariable Long postId,
+            @RequestParam String studentId) {
+        projectPostService.closePost(studentId, postId);
+        return ResponseEntity.ok(ApiResponse.success("마감 완료", null));
+    }
+
     @Operation(summary = "모집글 작성", description = "필수 항목이 모두 입력되어야 등록됩니다. 마감일은 24시간 이후여야 합니다.")
     @PostMapping
     public ResponseEntity<ApiResponse<PostCreateResponse>> createPost(

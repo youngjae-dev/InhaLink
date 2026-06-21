@@ -66,4 +66,14 @@ public class ProjectPostService {
                 .orElseThrow(PostNotFoundException::new);
         return new ProjectPostResponse(post);
     }
+
+    @Transactional
+    public void closePost(String studentId, Long postId) {
+        ProjectPost post = projectPostRepository.findById(postId)
+                .orElseThrow(PostNotFoundException::new);
+        if (!post.getWriter().getStudentId().equals(studentId)) {
+            throw new org.springframework.security.access.AccessDeniedException("마감 권한이 없습니다.");
+        }
+        post.close();
+    }
 }

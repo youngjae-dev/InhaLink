@@ -68,6 +68,20 @@ export const api = {
   rejectApplication: (applicationId) =>
     request("PATCH", `/applications/${applicationId}/reject`),
 
+  // 공모전/팀플 조기마감
+  closePost: (postId, studentId) =>
+    request("PATCH", `/posts/${postId}/close?studentId=${studentId}`),
+
+  // 밥친구
+  getMealPosts: () =>
+    request("GET", "/meal-posts"),
+  getMealPost: (postId) =>
+    request("GET", `/meal-posts/${postId}`),
+  createMealPost: (studentId, body) =>
+    request("POST", `/meal-posts?studentId=${studentId}`, body),
+  closeMealPost: (postId, studentId) =>
+    request("PATCH", `/meal-posts/${postId}/close?studentId=${studentId}`),
+
   // 채팅
   getMyChatRooms: () =>
     request("GET", "/chat/rooms"),

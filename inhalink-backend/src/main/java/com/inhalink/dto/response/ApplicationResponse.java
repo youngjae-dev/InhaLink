@@ -9,6 +9,9 @@ public class ApplicationResponse {
     private final String applicantStudentId;
     private final String applicantName;
     private final String applicantDepartment;
+    private final String applicantDomains;
+    private final String applicantActivities;
+    private final String applicantContact;
     private final String status;
 
     public ApplicationResponse(ProjectApplication app) {
@@ -16,6 +19,9 @@ public class ApplicationResponse {
         this.applicantStudentId = app.getApplicant().getStudentId();
         this.applicantName = app.getApplicant().getName();
         this.applicantDepartment = app.getApplicant().getDepartment();
+        this.applicantDomains = app.getApplicant().getDomains();
+        this.applicantActivities = app.getApplicant().getActivities();
+        this.applicantContact = app.getApplicant().getContact();
         this.status = app.getStatus().name();
     }
 }
