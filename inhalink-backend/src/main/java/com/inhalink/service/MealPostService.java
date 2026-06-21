@@ -99,7 +99,7 @@ public class MealPostService {
         MealPost post = mealPostRepository.findById(postId).orElseThrow(PostNotFoundException::new);
         if (!post.getWriter().getStudentId().equals(studentId)) throw new AccessDeniedException("권한이 없습니다.");
 
-        mealApplicationRepository.findByMealPostId(postId).forEach(MealApplication::reject);
+        mealApplicationRepository.deleteAll(mealApplicationRepository.findByMealPostId(postId));
         mealPostRepository.delete(post);
     }
 }

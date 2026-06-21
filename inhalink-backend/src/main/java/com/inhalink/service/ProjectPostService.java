@@ -123,7 +123,7 @@ public class ProjectPostService {
         ProjectPost post = projectPostRepository.findById(postId).orElseThrow(PostNotFoundException::new);
         if (!post.getWriter().getStudentId().equals(studentId)) throw new AccessDeniedException("권한이 없습니다.");
 
-        projectApplicationRepository.findByProjectPostId(postId).forEach(ProjectApplication::reject);
+        projectApplicationRepository.deleteAll(projectApplicationRepository.findByProjectPostId(postId));
         projectPostRepository.delete(post);
     }
 }
