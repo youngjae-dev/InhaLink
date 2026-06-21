@@ -103,4 +103,19 @@ public class ProjectPost extends BaseTimeEntity {
         }
         this.status = PostStatus.CLOSED;
     }
+
+    public void update(String title, PostCategory category, String projectName, String content,
+                       int maxMembers, LocalDateTime deadline, LocalDateTime teamFormationDate,
+                       String preferredQualifications, String message, ActivityMethod activityMethod) {
+        this.title = title;
+        this.category = category;
+        this.projectName = projectName;
+        this.content = content;
+        this.maxMembers = maxMembers;
+        this.deadline = deadline;
+        this.teamFormationDate = teamFormationDate;
+        this.preferredQualifications = preferredQualifications;
+        this.message = message;
+        this.activityMethod = activityMethod;
+    }
 }

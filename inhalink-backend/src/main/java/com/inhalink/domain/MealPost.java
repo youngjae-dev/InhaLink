@@ -64,4 +64,12 @@ public class MealPost extends BaseTimeEntity {
         }
         this.status = PostStatus.CLOSED;
     }
+
+    public void update(String title, String location, LocalDateTime mealTime, int maxMembers, String content) {
+        this.title = title;
+        this.location = location;
+        this.mealTime = mealTime;
+        this.maxMembers = maxMembers;
+        this.content = content;
+    }
 }

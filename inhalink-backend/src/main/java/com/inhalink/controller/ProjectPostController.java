@@ -57,6 +57,16 @@ public class ProjectPostController {
         return ResponseEntity.ok(ApiResponse.success("성공", data));
     }
 
+    @Operation(summary = "모집글 수정")
+    @PutMapping("/{postId}")
+    public ResponseEntity<ApiResponse<Void>> updatePost(
+            @PathVariable Long postId,
+            @Valid @RequestBody ProjectPostCreateRequest request,
+            Authentication auth) {
+        projectPostService.updatePost((String) auth.getPrincipal(), postId, request);
+        return ResponseEntity.ok(ApiResponse.success("수정 완료", null));
+    }
+
     @Operation(summary = "내 모집글 목록 조회")
     @GetMapping("/my")
     public ResponseEntity<ApiResponse<List<ProjectPostResponse>>> getMyPosts(Authentication auth) {

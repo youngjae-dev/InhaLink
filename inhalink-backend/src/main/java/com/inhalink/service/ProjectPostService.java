@@ -83,6 +83,16 @@ public class ProjectPostService {
         post.close();
     }
 
+    @Transactional
+    public void updatePost(String studentId, Long postId, ProjectPostCreateRequest request) {
+        ProjectPost post = projectPostRepository.findById(postId).orElseThrow(PostNotFoundException::new);
+        if (!post.getWriter().getStudentId().equals(studentId)) throw new AccessDeniedException("수정 권한이 없습니다.");
+        post.update(request.getTitle(), request.getCategory(), request.getProjectName(),
+                request.getContent(), request.getMaxMembers(), request.getDeadline(),
+                request.getTeamFormationDate(), request.getPreferredQualifications(),
+                request.getMessage(), request.getActivityMethod());
+    }
+
     @Transactional(readOnly = true)
     public List<ProjectPostResponse> getMyPosts(String studentId) {
         return projectPostRepository.findByWriterStudentIdOrderByCreatedAtDesc(studentId).stream()

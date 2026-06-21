@@ -45,6 +45,15 @@ public class MealPostController {
         return ResponseEntity.ok(ApiResponse.success("마감 완료", null));
     }
 
+    @PutMapping("/{postId}")
+    public ResponseEntity<ApiResponse<Void>> updatePost(
+            @PathVariable Long postId,
+            @Valid @RequestBody MealPostCreateRequest request,
+            Authentication auth) {
+        mealPostService.updatePost((String) auth.getPrincipal(), postId, request);
+        return ResponseEntity.ok(ApiResponse.success("수정 완료", null));
+    }
+
     @GetMapping("/my")
     public ResponseEntity<ApiResponse<List<MealPostResponse>>> getMyPosts(Authentication auth) {
         return ResponseEntity.ok(ApiResponse.success("조회 성공", mealPostService.getMyPosts((String) auth.getPrincipal())));

@@ -61,6 +61,14 @@ public class MealPostService {
         post.close();
     }
 
+    @Transactional
+    public void updatePost(String studentId, Long postId, MealPostCreateRequest request) {
+        MealPost post = mealPostRepository.findById(postId).orElseThrow(PostNotFoundException::new);
+        if (!post.getWriter().getStudentId().equals(studentId)) throw new AccessDeniedException("수정 권한이 없습니다.");
+        post.update(request.getTitle(), request.getLocation(), request.getMealTime(),
+                request.getMaxMembers(), request.getContent());
+    }
+
     @Transactional(readOnly = true)
     public List<MealPostResponse> getMyPosts(String studentId) {
         return mealPostRepository.findByWriterStudentIdOrderByCreatedAtDesc(studentId)
