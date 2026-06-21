@@ -25,7 +25,6 @@ public class ProjectApplicationService {
     private final ProjectApplicationRepository applicationRepository;
     private final ProjectPostRepository projectPostRepository;
     private final UserRepository userRepository;
-    private final ChatService chatService;
 
     @Transactional
     public Long applyForProject(String applicantId, Long postId) {
@@ -87,11 +86,6 @@ public class ProjectApplicationService {
 
         if (newStatus == ApplicationStatus.ACCEPTED) {
             application.accept();
-            // 수락 시 채팅방 자동 생성
-            ProjectPost post = application.getProjectPost();
-            String roomName = post.getTitle() + " 채팅방";
-            List<String> memberIds = List.of(writerId, application.getApplicant().getStudentId());
-            chatService.createRoom(roomName, memberIds, post);
         } else if (newStatus == ApplicationStatus.REJECTED) {
             application.reject();
         }
