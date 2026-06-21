@@ -26,7 +26,7 @@ function RequireAuth({ children }) {
 
 // ── 공유 햄버거 메뉴 ──────────────────────────────────────
 function HamburgerMenu() {
-  const { setCurrentUser, currentUser } = useUser();
+  const { setCurrentUser } = useUser();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const logout = () => { clearToken(); setCurrentUser(null); navigate("/"); };
