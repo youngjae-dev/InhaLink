@@ -50,4 +50,7 @@ public class ChatRoom extends BaseTimeEntity {
         room.creatorStudentId = creatorStudentId;
         return room;
     }
+
+    public void clearPost() { this.post = null; }
+    public void clearMealPost() { this.mealPost = null; }
 }

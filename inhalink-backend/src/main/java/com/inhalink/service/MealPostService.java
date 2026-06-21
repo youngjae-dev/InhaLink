@@ -92,7 +92,8 @@ public class MealPostService {
 
         chatService.createRoomDirect(post.getTitle() + " 밥친구채팅", memberIds, post);
         mealApplicationRepository.deleteAll(all);
-        post.close();
+        chatService.unlinkMealPost(postId);
+        mealPostRepository.delete(post);
     }
 
     @Transactional

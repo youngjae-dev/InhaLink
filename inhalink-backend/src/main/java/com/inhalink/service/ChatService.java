@@ -67,9 +67,30 @@ public class ChatService {
         }
         Long postId = room.getPost() != null ? room.getPost().getId() : null;
         Long mealPostId = room.getMealPost() != null ? room.getMealPost().getId() : null;
+        room.clearPost();
+        room.clearMealPost();
+        chatRoomRepository.save(room);
         chatRoomRepository.delete(room);
         if (postId != null) projectPostRepository.findById(postId).ifPresent(projectPostRepository::delete);
         if (mealPostId != null) mealPostRepository.findById(mealPostId).ifPresent(mealPostRepository::delete);
+    }
+
+    // 그룹 확정 후 모집글 삭제 시 채팅방 FK 해제 (공모전)
+    @Transactional
+    public void unlinkPost(Long postId) {
+        chatRoomRepository.findByPostId(postId).forEach(room -> {
+            room.clearPost();
+            chatRoomRepository.save(room);
+        });
+    }
+
+    // 그룹 확정 후 모집글 삭제 시 채팅방 FK 해제 (밥친구)
+    @Transactional
+    public void unlinkMealPost(Long mealPostId) {
+        chatRoomRepository.findByMealPostId(mealPostId).forEach(room -> {
+            room.clearMealPost();
+            chatRoomRepository.save(room);
+        });
     }
 
     // 내 채팅방 목록 조회

@@ -13,4 +13,5 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     List<ChatRoom> findByMemberStudentId(@Param("studentId") String studentId);
 
     List<ChatRoom> findByPostId(Long postId);
+    List<ChatRoom> findByMealPostId(Long mealPostId);
 }

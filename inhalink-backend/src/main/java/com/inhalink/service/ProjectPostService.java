@@ -116,7 +116,8 @@ public class ProjectPostService {
 
         chatService.createRoom(post.getTitle() + " 그룹채팅", memberIds, post);
         projectApplicationRepository.deleteAll(all);
-        post.close();
+        chatService.unlinkPost(postId);
+        projectPostRepository.delete(post);
     }
 
     @Transactional
