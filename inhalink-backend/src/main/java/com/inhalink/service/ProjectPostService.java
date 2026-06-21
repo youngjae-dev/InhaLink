@@ -104,7 +104,8 @@ public class ProjectPostService {
         ProjectPost post = projectPostRepository.findById(postId).orElseThrow(PostNotFoundException::new);
         if (!post.getWriter().getStudentId().equals(studentId)) throw new AccessDeniedException("권한이 없습니다.");
 
-        List<ProjectApplication> accepted = projectApplicationRepository.findByProjectPostId(postId).stream()
+        List<ProjectApplication> all = projectApplicationRepository.findByProjectPostId(postId);
+        List<ProjectApplication> accepted = all.stream()
                 .filter(a -> a.getStatus() == ApplicationStatus.ACCEPTED).collect(Collectors.toList());
 
         List<String> memberIds = new java.util.ArrayList<>();
@@ -112,6 +113,7 @@ public class ProjectPostService {
         accepted.forEach(a -> memberIds.add(a.getApplicant().getStudentId()));
 
         chatService.createRoom(post.getTitle() + " 그룹채팅", memberIds, post);
+        projectApplicationRepository.deleteAll(all);
     }
 
     @Transactional

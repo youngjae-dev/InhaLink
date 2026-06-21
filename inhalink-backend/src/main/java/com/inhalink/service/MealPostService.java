@@ -80,7 +80,8 @@ public class MealPostService {
         MealPost post = mealPostRepository.findById(postId).orElseThrow(PostNotFoundException::new);
         if (!post.getWriter().getStudentId().equals(studentId)) throw new AccessDeniedException("권한이 없습니다.");
 
-        List<MealApplication> accepted = mealApplicationRepository.findByMealPostId(postId).stream()
+        List<MealApplication> all = mealApplicationRepository.findByMealPostId(postId);
+        List<MealApplication> accepted = all.stream()
                 .filter(a -> a.getStatus() == ApplicationStatus.ACCEPTED).collect(Collectors.toList());
 
         List<String> memberIds = new ArrayList<>();
@@ -88,6 +89,7 @@ public class MealPostService {
         accepted.forEach(a -> memberIds.add(a.getApplicant().getStudentId()));
 
         chatService.createRoomDirect(post.getTitle() + " 밥친구채팅", memberIds);
+        mealApplicationRepository.deleteAll(all);
     }
 
     @Transactional
