@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import com.inhalink.dto.response.MyApplicationResponse;
 import java.util.List;
 
 @Tag(name = "Application API", description = "모집글 지원 관련 API")
@@ -28,6 +29,13 @@ public class ProjectApplicationController {
         String studentId = (String) auth.getPrincipal();
         Long id = applicationService.applyForProject(studentId, postId);
         return ResponseEntity.ok(ApiResponse.success("지원이 완료되었습니다.", id));
+    }
+
+    @Operation(summary = "내가 지원한 글 목록 조회")
+    @GetMapping("/api/applications/my")
+    public ResponseEntity<ApiResponse<List<MyApplicationResponse>>> getMyApplications(Authentication auth) {
+        String studentId = (String) auth.getPrincipal();
+        return ResponseEntity.ok(ApiResponse.success("조회 성공", applicationService.getMyApplications(studentId)));
     }
 
     @Operation(summary = "지원자 목록 조회 (글 작성자만)")

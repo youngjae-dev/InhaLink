@@ -68,6 +68,13 @@ public class ProjectApplicationService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<com.inhalink.dto.response.MyApplicationResponse> getMyApplications(String studentId) {
+        return applicationRepository.findByApplicantStudentIdOrderByCreatedAtDesc(studentId).stream()
+                .map(com.inhalink.dto.response.MyApplicationResponse::new)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public void updateApplicationStatus(String loginId, Long applicationId, ApplicationStatus newStatus) {
         ProjectApplication application = applicationRepository.findById(applicationId)

@@ -12,4 +12,6 @@ public interface ProjectApplicationRepository extends JpaRepository<ProjectAppli
     List<ProjectApplication> findByProjectPostId(Long postId);
 
     boolean existsByApplicantAndProjectPost(User applicant, ProjectPost projectPost);
+
+    List<ProjectApplication> findByApplicantStudentIdOrderByCreatedAtDesc(String studentId);
 }

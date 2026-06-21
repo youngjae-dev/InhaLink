@@ -72,6 +72,10 @@ export const api = {
   closePost: (postId, studentId) =>
     request("PATCH", `/posts/${postId}/close?studentId=${studentId}`),
 
+  // 내가 지원한 글 목록
+  getMyApplications: () =>
+    request("GET", "/applications/my"),
+
   // 밥친구
   getMealPosts: () =>
     request("GET", "/meal-posts"),
