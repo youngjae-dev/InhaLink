@@ -131,7 +131,7 @@ function LoginBox() {
       if (!profile.profileComplete) {
         navigate("/profile/create");
       } else {
-        navigate("/posts");
+        navigate("/home");
       }
     } catch {
       setError("학번 또는 비밀번호가 올바르지 않습니다.");
@@ -611,16 +611,12 @@ function TeamDetailPage() {
 // ── 밥친구 ────────────────────────────────────────────────
 function MealPage() {
   const navigate = useNavigate();
-  const posts = [
-    ["학생식당 같이 먹을 사람!", "오늘 12시 · 학생식당 · 1/2명"],
-    ["후문 라멘 먹을 사람", "오늘 6시 · 후문 · 2/4명"],
-  ];
   return (
     <div className="box wide page-box">
       <h2>밥친구 메인</h2>
       <input type="text" placeholder="검색어를 입력하세요" />
       <div className="simple-post-list">
-        {posts.map((post, index) => (
+        {[].map((post, index) => (
           <div className="simple-post" key={index}>
             <div><h3>{post[0]}</h3><p>{post[1]}</p></div>
             <button className="small-btn" onClick={() => navigate("/meal/detail")}>모집중</button>
