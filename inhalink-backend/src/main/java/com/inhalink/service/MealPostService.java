@@ -91,7 +91,8 @@ public class MealPostService {
         accepted.forEach(a -> memberIds.add(a.getApplicant().getStudentId()));
 
         chatService.createRoomDirect(post.getTitle() + " 밥친구채팅", memberIds);
-        mealApplicationRepository.deleteByMealPostId(postId);
+        mealApplicationRepository.deleteAll(all);
+        post.close();
     }
 
     @Transactional

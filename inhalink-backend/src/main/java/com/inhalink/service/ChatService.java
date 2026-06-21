@@ -20,6 +20,8 @@ public class ChatService {
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
+    private final ProjectPostRepository projectPostRepository;
+    private final MealPostRepository mealPostRepository;
 
     // 채팅방 생성 (모집글 확정 시 또는 직접 호출)
     @Transactional
@@ -50,7 +52,7 @@ public class ChatService {
         chatRoomRepository.deleteAll(chatRoomRepository.findByPostId(postId));
     }
 
-    // 채팅방 삭제 (방장만 가능)
+    // 채팅방 삭제 (방장만 가능) + 연결된 모집글도 삭제
     @Transactional
     public void deleteRoom(Long roomId, String studentId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
@@ -58,7 +60,11 @@ public class ChatService {
         if (!studentId.equals(room.getCreatorStudentId())) {
             throw new org.springframework.security.access.AccessDeniedException("방장만 채팅방을 삭제할 수 있습니다.");
         }
+        Long postId = room.getPost() != null ? room.getPost().getId() : null;
         chatRoomRepository.delete(room);
+        if (postId != null) {
+            projectPostRepository.findById(postId).ifPresent(projectPostRepository::delete);
+        }
     }
 
     // 내 채팅방 목록 조회

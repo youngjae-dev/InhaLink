@@ -115,7 +115,8 @@ public class ProjectPostService {
         accepted.forEach(a -> memberIds.add(a.getApplicant().getStudentId()));
 
         chatService.createRoom(post.getTitle() + " 그룹채팅", memberIds, post);
-        projectApplicationRepository.deleteByProjectPostId(postId);
+        projectApplicationRepository.deleteAll(all);
+        post.close();
     }
 
     @Transactional
