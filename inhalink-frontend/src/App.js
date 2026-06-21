@@ -26,7 +26,7 @@ function RequireAuth({ children }) {
 
 // ── 공유 햄버거 메뉴 ──────────────────────────────────────
 function HamburgerMenu() {
-  const { setCurrentUser } = useUser();
+  const { setCurrentUser, currentUser } = useUser();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const logout = () => { clearToken(); setCurrentUser(null); navigate("/"); };
@@ -34,6 +34,7 @@ function HamburgerMenu() {
   return (
     <>
       <button className="hamburger" onClick={() => setOpen(!open)} style={{ position: "fixed", top: "16px", left: "16px", zIndex: 200 }}>☰</button>
+      <button onClick={() => navigate("/profile/edit")} style={{ position: "fixed", top: "12px", right: "16px", zIndex: 200, background: "#6c63ff", color: "#fff", border: "none", borderRadius: "20px", padding: "6px 14px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>👤 {currentUser?.name || "내 프로필"}</button>
       {open && (
         <>
           <div className="menu-bg" onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 201 }} />
@@ -43,7 +44,6 @@ function HamburgerMenu() {
               ["🏠 홈", "/home"],
               ["🍚 밥친구 찾기", "/meal"],
               ["🏆 팀플·공모전", "/posts"],
-              ["👤 프로필 수정", "/profile/edit"],
               ["📋 내 모집글", "/my-posts"],
               ["📝 내 지원 현황", "/my-applications"],
               ["💬 채팅", "/chat"],
@@ -368,8 +368,25 @@ function HomePage() {
         </div>
         <div className="service-card" onClick={() => { loadPosts(); navigate("/posts"); }}>
           <div className="icon purple">🏆</div>
-          <h2>팀플·공모전</h2>
+          <h2>팀플·공모전 팀원 찾기</h2>
           <p>함께 도전할 팀원을 구해요</p>
+        </div>
+        <div className="service-card" onClick={() => navigate("/my-posts")}>
+          <div className="icon" style={{ background: "#fef3c7", fontSize: "28px" }}>📋</div>
+          <h2>내 모집글</h2>
+          <p>내가 작성한 모집글을 확인해요</p>
+        </div>
+        <div className="service-card" onClick={() => navigate("/my-applications")}>
+          <div className="icon" style={{ background: "#ede9fe", fontSize: "28px" }}>📝</div>
+          <h2>내 지원현황</h2>
+          <p>내가 지원한 모집글을 확인해요</p>
+        </div>
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", marginTop: "16px" }}>
+        <div className="service-card" onClick={() => navigate("/chat")} style={{ width: "calc(50% - 8px)", maxWidth: "240px" }}>
+          <div className="icon" style={{ background: "#dbeafe", fontSize: "28px" }}>💬</div>
+          <h2>채팅</h2>
+          <p>참여 중인 채팅방을 확인해요</p>
         </div>
       </div>
     </>
